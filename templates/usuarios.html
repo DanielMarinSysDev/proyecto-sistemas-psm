@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios - TaskCore{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto" x-data="usuariosApp()" x-init="initModule()">
+    
+    <!-- Encabezado y buscador -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-slate-700/50 pb-5">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-100 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                Gestión de Usuarios
+            </h1>
+            <p class="mt-2 text-sm text-slate-400">Organización y administración de cuentas por departamentos.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <!-- Barra de búsqueda -->
+            <div class="relative min-w-[280px]">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+                <input x-model="searchQuery" type="text" placeholder="Buscar usuario..." class="w-full bg-slate-950/80 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </div>
+
+            <!-- Botón nuevo usuario -->
+            <button @click="abrirCrearModal()" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-95">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Nuevo Usuario
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenedor de departamentos/categorías agrupadas -->
+    <div class="space-y-10">
+        <template x-for="cat in categoriasRoles" :key="cat.titulo">
+            <div x-show="obtenerUsuariosPorCategoria(cat.roles).length > 0" class="space-y-4" x-transition>
+                
+                <!-- Encabezado de la categoría de Rol -->
+                <div class="flex items-center space-x-3 border-b border-slate-800/80 pb-2.5">
+                    <span class="w-3 h-3 rounded-full shadow-lg" :class="cat.colorCirculo"></span>
+                    <h2 class="text-md font-bold text-slate-300 uppercase tracking-wider" x-text="cat.titulo"></h2>
+                    <span class="text-xs bg-slate-950/80 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono font-bold" 
+                          x-text="obtenerUsuariosPorCategoria(cat.roles).length"></span>
+                </div>
+
+                <!-- Grid de tarjetas de usuarios -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="u in obtenerUsuariosPorCategoria(cat.roles)" :key="u.id">
+                        <div class="glass border border-slate-800 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700/60 transition-all duration-300 relative group"
+                             :class="cat.borderClass">
+                            
+                            <!-- Cabecera de tarjeta y avatar -->
+                            <div>
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-md font-bold text-white shadow-inner"
+                                         :class="{
+                                             'bg-violet-600/30 text-violet-300 border border-violet-500/20': u.rol === 'Administrador',
+                                             'bg-blue-600/30 text-blue-300 border border-blue-500/20': u.rol === 'Diseñador',
+                                             'bg-emerald-600/30 text-emerald-300 border border-emerald-500/20': u.rol === 'Ventas / Recepción',
+                                             'bg-orange-600/30 text-orange-300 border border-orange-500/20': u.rol === 'Operador de Producción',
+                                             'bg-amber-600/30 text-amber-300 border border-amber-500/20': u.rol === 'Instaladores / Operaciones de Campo',
+                                             'bg-slate-600/30 text-slate-300 border border-slate-500/20': u.rol === 'Gerencia'
+                                         }"
+                                         x-text="u.nombre[0].toUpperCase()">
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                                          :class="{
+                                              'bg-violet-950/60 text-violet-400 border border-violet-800/40': u.rol === 'Administrador',
+                                              'bg-blue-950/60 text-blue-400 border border-blue-800/40': u.rol === 'Diseñador',
+                                              'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40': u.rol === 'Ventas / Recepción',
+                                              'bg-orange-950/60 text-orange-400 border border-orange-800/40': u.rol === 'Operador de Producción',
+                                              'bg-amber-950/60 text-amber-400 border border-amber-800/40': u.rol === 'Instaladores / Operaciones de Campo',
+                                              'bg-slate-900/60 text-slate-400 border border-slate-800': u.rol === 'Gerencia'
+                                          }"
+                                          x-text="u.rol">
+                                    </span>
+                                </div>
+
+                                <h3 class="text-md font-bold text-white group-hover:text-blue-400 transition-colors" x-text="u.nombre"></h3>
+                                <p class="text-xs text-slate-400 mt-1 truncate" x-text="u.email"></p>
+                                <p class="text-xs text-slate-400 mt-1 flex items-center" x-show="u.telefono">
+                                    <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                    <span x-text="u.telefono"></span>
+                                </p>
+                            </div>
+
+                            <!-- Botones de Acción -->
+                            <div class="mt-5 pt-3 border-t border-slate-850 flex items-center justify-between text-xs">
+                                <span class="text-slate-500 font-mono text-[10px]" x-text="'ID: ' + u.id"></span>
+                                <div class="flex space-x-2">
+                                    <!-- Si es el usuario actual -->
+                                    <template x-if="u.id === usuarioIdActual">
+                                        <span class="px-2 py-0.5 text-slate-500 bg-slate-950/50 border border-slate-900 rounded text-[10px] italic">Actual</span>
+                                    </template>
+                                    
+                                    <!-- Si no es el usuario actual y se puede gestionar -->
+                                    <template x-if="u.id !== usuarioIdActual && puedeGestionar(u)">
+                                        <div class="flex space-x-2">
+                                            <!-- Editar -->
+                                            <button @click="abrirEditarModal(u)" class="p-1.5 bg-slate-950/65 border border-slate-850 hover:border-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors" title="Editar cuenta">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            </button>
+                                            <!-- Eliminar -->
+                                            <button @click="eliminarUsuario(u.id, u.nombre)" class="p-1.5 bg-red-950/20 border border-red-950/30 hover:border-red-500/40 text-red-400 hover:text-red-300 rounded-lg transition-colors" title="Eliminar cuenta">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <!-- Si no es el usuario actual y NO se puede gestionar -->
+                                    <template x-if="u.id !== usuarioIdActual && !puedeGestionar(u)">
+                                        <span class="px-2 py-0.5 text-slate-500 bg-slate-950/50 border border-slate-900 rounded text-[10px] italic">Protegido</span>
+                                    </template>
+                                </div>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Placeholder sin resultados global -->
+        <div x-show="totalUsuariosFiltrados === 0" class="text-center py-20 border border-dashed border-slate-800 rounded-2xl text-slate-500">
+            <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            No se encontraron usuarios que coincidan con la búsqueda.
+        </div>
+    </div>
+
+    <!-- Modal Crear / Editar Usuario -->
+    <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" x-transition style="display: none;">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6" @click.away="showModal = false">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-white" x-text="editMode ? 'Editar Usuario' : 'Crear Nuevo Usuario'"></h2>
+                <button @click="showModal = false" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form @submit.prevent="guardarUsuario" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nombre Completo</label>
+                    <input x-model="form.nombre" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nombre de Usuario (Login)</label>
+                    <input x-model="form.email" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Contraseña</label>
+                    <input x-model="form.password" type="password" :required="!editMode" minlength="6" :placeholder="editMode ? '(Dejar en blanco para conservar)' : 'Mínimo 6 caracteres'" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Rol / Nivel de Acceso</label>
+                    <select x-model="form.rol" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="" disabled>Seleccione un rol...</option>
+                        {% for r in roles %}
+                        {% if session.get('usuario_rol') == 'Administrador' or (r != 'Administrador' and r != 'Gerencia') %}
+                        <option value="{{ r }}">{{ r }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Teléfono / WhatsApp</label>
+                    <input x-model="form.telefono" type="text" placeholder="Ej: +584121234567" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" @click="showModal = false" class="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" :disabled="isSubmitting" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/10">
+                        <span x-show="!isSubmitting" x-text="editMode ? 'Guardar Cambios' : 'Crear Cuenta'"></span>
+                        <span x-show="isSubmitting">Guardando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('usuariosApp', () => ({
+        usuarios: [
+            {% for u in usuarios %}
+            {
+                id: {{ u.id }},
+                nombre: "{{ u.nombre }}",
+                email: "{{ u.email }}",
+                rol: "{{ u.rol.value }}",
+                telefono: "{{ u.telefono or '' }}"
+            },
+            {% endfor %}
+        ],
+        usuarioIdActual: {{ session.get('usuario_id', 0) }},
+        usuarioRolActual: "{{ session.get('usuario_rol') }}",
+        puedeGestionar(u) {
+            if (this.usuarioRolActual === 'Administrador') {
+                return true;
+            }
+            if (this.usuarioRolActual === 'Gerencia') {
+                return u.rol !== 'Administrador' && u.rol !== 'Gerencia';
+            }
+            return false;
+        },
+        searchQuery: '',
+        showModal: false,
+        editMode: false,
+        editId: null,
+        isSubmitting: false,
+        form: {
+            nombre: '',
+            email: '',
+            password: '',
+            rol: '',
+            telefono: ''
+        },
+        
+        categoriasRoles: [
+            {
+                titulo: 'Administración y Gerencia',
+                roles: ['Administrador', 'Gerencia'],
+                colorCirculo: 'bg-violet-500',
+                borderClass: 'border-l-2 border-l-violet-500/60'
+            },
+            {
+                titulo: 'Diseño Gráfico',
+                roles: ['Diseñador'],
+                colorCirculo: 'bg-blue-500',
+                borderClass: 'border-l-2 border-l-blue-500/60'
+            },
+            {
+                titulo: 'Ventas y Recepción',
+                roles: ['Ventas / Recepción'],
+                colorCirculo: 'bg-emerald-500',
+                borderClass: 'border-l-2 border-l-emerald-500/60'
+            },
+            {
+                titulo: 'Producción y Operaciones de Campo',
+                roles: ['Operador de Producción', 'Instaladores / Operaciones de Campo'],
+                colorCirculo: 'bg-amber-500',
+                borderClass: 'border-l-2 border-l-amber-500/60'
+            }
+        ],
+        
+        initModule() {},
+        
+        obtenerUsuariosPorCategoria(rolesPermitidos) {
+            const query = this.searchQuery.toLowerCase().trim();
+            return this.usuarios.filter(u => {
+                const matchesRole = rolesPermitidos.includes(u.rol);
+                const matchesQuery = !query || 
+                                     u.nombre.toLowerCase().includes(query) || 
+                                     u.email.toLowerCase().includes(query);
+                return matchesRole && matchesQuery;
+            });
+        },
+        
+        get totalUsuariosFiltrados() {
+            const query = this.searchQuery.toLowerCase().trim();
+            if (!query) return this.usuarios.length;
+            return this.usuarios.filter(u => 
+                u.nombre.toLowerCase().includes(query) || 
+                u.email.toLowerCase().includes(query)
+            ).length;
+        },
+        
+        abrirCrearModal() {
+            this.editMode = false;
+            this.editId = null;
+            this.form.nombre = '';
+            this.form.email = '';
+            this.form.password = '';
+            this.form.rol = '';
+            this.form.telefono = '';
+            this.showModal = true;
+        },
+        
+        abrirEditarModal(u) {
+            this.editMode = true;
+            this.editId = u.id;
+            this.form.nombre = u.nombre;
+            this.form.email = u.email;
+            this.form.password = '';
+            this.form.rol = u.rol;
+            this.form.telefono = u.telefono;
+            this.showModal = true;
+        },
+        
+        async guardarUsuario() {
+            this.isSubmitting = true;
+            const url = this.editMode ? `/api/usuarios/${this.editId}` : '/api/usuarios';
+            const method = this.editMode ? 'PUT' : 'POST';
+            
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.form)
+                });
+                
+                if (res.ok) {
+                    if (this.editMode) {
+                        const idx = this.usuarios.findIndex(u => u.id === this.editId);
+                        if (idx !== -1) {
+                            this.usuarios[idx].nombre = this.form.nombre;
+                            this.usuarios[idx].email = this.form.email;
+                            this.usuarios[idx].rol = this.form.rol;
+                            this.usuarios[idx].telefono = this.form.telefono;
+                        }
+                    } else {
+                        window.location.reload();
+                        return;
+                    }
+                    this.showModal = false;
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + data.error);
+                }
+            } catch(e) {
+                alert('Error de conexión.');
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+        
+        async eliminarUsuario(id, nombre) {
+            if (!confirm(`¿Estás seguro que deseas eliminar permanentemente al usuario ${nombre}? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/usuarios/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    this.usuarios = this.usuarios.filter(u => u.id !== id);
+                } else {
+                    const data = await res.json();
+                    alert('Error al eliminar: ' + data.error);
+                }
+            } catch(e) {
+                alert('Error de conexión.');
+            }
+        }
+    }));
+});
+</script>
+{% endblock %}

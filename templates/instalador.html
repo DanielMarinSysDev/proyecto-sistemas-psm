@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Instaladores - TaskCore</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/Logo Azul.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        blue: { 400: '#3ea1f4', 500: '#0477d3', 600: '#0360aa' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css?v=1.0.3">
+</head>
+<body class="text-slate-200 antialiased h-screen flex flex-col">
+
+    <!-- Header Móvil -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-4 sticky top-0 z-50 shadow-md">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-xl text-white tracking-tight">
+                    <span class="font-logo">TaskCore</span> 
+                    <span class="text-blue-500 font-bold ml-1">MÓVIL</span>
+                </h1>
+                <p class="text-xs text-slate-400">Trabajos Listos para Instalar</p>
+            </div>
+            <button onclick="logout()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Lista de Tareas -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-4" x-data="instaladorApp()">
+        
+        {% if ordenes %}
+            {% for orden in ordenes %}
+            <div class="glass-panel rounded-2xl p-5 shadow-lg relative overflow-hidden" id="card_{{ orden.id }}">
+                
+                <div class="flex justify-between items-start mb-3">
+                    <span class="bg-blue-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">JOB-{{ orden.id }}</span>
+                    <span class="text-xs text-slate-400 font-medium">{{ orden.fecha_creacion.strftime('%d %b') }}</span>
+                </div>
+                
+                <h2 class="text-lg font-bold text-white leading-tight mb-1">{{ orden.nombre_proyecto }}</h2>
+                
+                <div class="flex items-center text-sm text-slate-300 mb-4">
+                    <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <span class="font-medium">{{ orden.cliente.nombre_empresa }}</span>
+                </div>
+                
+                <div class="bg-slate-900/50 rounded-xl p-3 mb-4 border border-slate-800">
+                    <p class="text-xs text-slate-400 mb-1 font-semibold uppercase tracking-wider">Especificaciones:</p>
+                    <p class="text-sm text-slate-300 line-clamp-3">{{ orden.especificaciones or 'Sin especificaciones técnicas registradas.' }}</p>
+                </div>
+                
+                <!-- Botón de Acción Principal -->
+                <div class="mt-4">
+                    <input type="file" id="foto_{{ orden.id }}" class="hidden" accept="image/*" capture="environment" @change="subirFoto({{ orden.id }}, $event)">
+                    
+                    <button @click="document.getElementById('foto_{{ orden.id }}').click()" :disabled="isUploading === {{ orden.id }}" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50">
+                        
+                        <span x-show="isUploading !== {{ orden.id }}" class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            Tomar Foto y Completar
+                        </span>
+                        
+                        <span x-show="isUploading === {{ orden.id }}" style="display: none;" class="flex items-center">
+                            <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Subiendo imagen...
+                        </span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="flex flex-col items-center justify-center h-[60vh] text-center px-6">
+                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-2">Todo al día</h2>
+                <p class="text-slate-400">No hay trabajos pendientes de instalación en este momento.</p>
+            </div>
+        {% endif %}
+        
+    </main>
+
+    <script>
+        function logout() {
+            fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/login');
+        }
+        
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('instaladorApp', () => ({
+                isUploading: null,
+                
+                async subirFoto(orderId, event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    this.isUploading = orderId;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    try {
+                        // 1. Subir Foto
+                        let res = await fetch(`/api/ordenes/${orderId}/upload-instalacion`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!res.ok) {
+                            alert("Error al subir la imagen");
+                            this.isUploading = null;
+                            return;
+                        }
+                        
+                        // 2. Cambiar Estado a Completado
+                        res = await fetch(`/api/ordenes/${orderId}/estado`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                nuevo_estado: "Completado",
+                                usuario_id: 1 // TODO: Usar sesión real
+                            })
+                        });
+                        
+                        if (res.ok) {
+                            // Ocultar tarjeta con animación
+                            const card = document.getElementById('card_' + orderId);
+                            card.style.opacity = '0';
+                            setTimeout(() => card.remove(), 300);
+                            alert("¡Trabajo Completado Exitosamente!");
+                        }
+                        
+                    } catch(e) {
+                        alert('Error de conexión');
+                    } finally {
+                        this.isUploading = null;
+                    }
+                }
+            }));
+        });
+    </script>
+</body>
+</html>

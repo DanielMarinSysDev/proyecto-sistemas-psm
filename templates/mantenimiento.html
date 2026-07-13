@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Mantenimiento - TaskCore{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto" x-data="mantenimientoApp()">
+    
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-slate-700/50 pb-5">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-100 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.58 4 8 4s8-1.79 8-4M4 7c0-2.21 3.58-4 8-4s8 1.79 8 4m0 5c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5c0 2.21-3.58 4-8 4s-8-1.79-8-4"></path>
+                </svg>
+                Mantenimiento de Base de Datos
+            </h1>
+            <p class="mt-2 text-sm text-slate-400">Crea respaldos manuales de la base de datos PostgreSQL o restaura el sistema a un punto anterior.</p>
+        </div>
+    </div>
+
+    <!-- Mensajes de Estado/Alertas -->
+    <div x-show="alert.show" x-transition class="mb-6 p-4 rounded-lg flex items-center justify-between border"
+         :class="alert.type === 'success' ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-rose-950/40 border-rose-800 text-rose-400'"
+         style="display: none;">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span x-text="alert.message"></span>
+        </div>
+        <button @click="alert.show = false" class="text-slate-400 hover:text-slate-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Panel de Acciones Rápidas -->
+        <div class="glass border border-slate-800 rounded-xl p-6 flex flex-col justify-between h-fit">
+            <div>
+                <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Nuevo Respaldo
+                </h2>
+                <p class="text-sm text-slate-400 mb-6">
+                    Genera una copia de seguridad en formato SQL de toda la información actual del sistema: usuarios, clientes, pedidos, órdenes de trabajo y configuraciones generales. El archivo se almacenará de manera segura en el servidor.
+                </p>
+            </div>
+            
+            <button @click="crearRespaldo()" :disabled="loading"
+                    class="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                <svg x-show="!loading" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                </svg>
+                <svg x-show="loading" class="animate-spin h-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span x-text="loading ? 'Generando Respaldo...' : 'Crear Respaldo Ahora'"></span>
+            </button>
+        </div>
+
+        <!-- Tabla/Lista de Respaldos Existentes -->
+        <div class="lg:col-span-2 glass border border-slate-800 rounded-xl p-6">
+            <h2 class="text-xl font-bold text-slate-100 mb-6 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Historial de Respaldos Disponibles
+            </h2>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-800">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Archivo</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Fecha</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Tamaño</th>
+                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-400">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        {% if respaldos %}
+                            {% for r in respaldos %}
+                                <tr class="hover:bg-slate-900/40 transition-colors">
+                                    <td class="px-4 py-4 text-sm font-medium text-slate-200 font-mono">{{ r.nombre }}</td>
+                                    <td class="px-4 py-4 text-sm text-slate-400">{{ r.fecha }}</td>
+                                    <td class="px-4 py-4 text-sm text-slate-400">{{ r.tamano }}</td>
+                                    <td class="px-4 py-4 text-right text-sm">
+                                        <button @click="confirmarRestaurar('{{ r.nombre }}')"
+                                                class="inline-flex items-center px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/35 border border-amber-500/30 hover:border-amber-500/50 text-amber-300 text-xs font-semibold rounded-lg transition-all active:scale-95">
+                                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3z"></path>
+                                            </svg>
+                                            Restaurar
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500">
+                                    No se encontraron respaldos de base de datos creados todavía.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Restauración -->
+    <div x-show="modal.show" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+        
+        <!-- Modal content wrapper -->
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="glass border border-slate-700/60 rounded-2xl max-w-md w-full p-6 shadow-2xl relative z-10"
+                 @click.away="modal.show = false">
+                
+                <div class="flex items-center space-x-3 text-rose-500 mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <h3 class="text-lg font-bold text-slate-100">¿Confirmar Restauración?</h3>
+                </div>
+                
+                <p class="text-sm text-slate-300 mb-5 leading-relaxed">
+                    Estás a punto de restaurar la base de datos utilizando el archivo:
+                    <strong class="block font-mono bg-slate-950/80 px-2 py-1 border border-slate-800 rounded mt-2 text-slate-100" x-text="modal.filename"></strong>
+                </p>
+                <div class="p-3 bg-rose-950/40 border border-rose-800/40 rounded-lg text-xs text-rose-300 mb-6">
+                    <strong>¡Atención!</strong> Esta acción es irreversible. Se eliminarán todos los cambios y nuevos datos registrados después de la fecha de creación de este respaldo.
+                </div>
+
+                <div class="flex space-x-3 justify-end">
+                    <button @click="modal.show = false" :disabled="loading"
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-lg transition-all active:scale-95 disabled:opacity-50">
+                        Cancelar
+                    </button>
+                    <button @click="ejecutarRestauracion()" :disabled="loading"
+                            class="inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm rounded-lg transition-all active:scale-95 disabled:opacity-50">
+                        <svg x-show="loading" class="animate-spin h-4 w-4 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span x-text="loading ? 'Restaurando...' : 'Restaurar Base de Datos'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function mantenimientoApp() {
+    return {
+        loading: false,
+        alert: {
+            show: false,
+            type: 'success',
+            message: ''
+        },
+        modal: {
+            show: false,
+            filename: ''
+        },
+        showAlert(type, message) {
+            this.alert.type = type;
+            this.alert.message = message;
+            this.alert.show = true;
+            // Ocultar automáticamente a los 8 segundos
+            setTimeout(() => {
+                this.alert.show = false;
+            }, 8000);
+        },
+        async crearRespaldo() {
+            this.loading = true;
+            this.alert.show = false;
+            try {
+                const response = await fetch('/api/mantenimiento/respaldar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    this.showAlert('success', data.mensaje);
+                    // Recargar la página después de 2 segundos para ver el nuevo respaldo
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    this.showAlert('error', data.error || 'Error al crear el respaldo.');
+                }
+            } catch (err) {
+                this.showAlert('error', 'Fallo en la comunicación con el servidor.');
+            } finally {
+                this.loading = false;
+            }
+        },
+        confirmarRestaurar(filename) {
+            this.modal.filename = filename;
+            this.modal.show = true;
+        },
+        async ejecutarRestauracion() {
+            this.loading = true;
+            this.modal.show = false;
+            this.alert.show = false;
+            try {
+                const response = await fetch('/api/mantenimiento/restaurar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: this.modal.filename })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    this.showAlert('success', data.mensaje || 'Base de datos restaurada con éxito.');
+                } else {
+                    this.showAlert('error', data.error || 'Error al restaurar la base de datos.');
+                }
+            } catch (err) {
+                this.showAlert('error', 'Fallo en la comunicación con el servidor.');
+            } finally {
+                this.loading = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,806 @@
+{% extends "base.html" %}
+
+{% block title %}Recepción - TaskCore{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-white tracking-tight">Recepción y Ventas</h1>
+    <p class="text-slate-400 mt-1">Gestión de Clientes y Nuevas Órdenes</p>
+</div>
+
+<div x-data="recepcionModule()" x-init="initModule()" class="flex flex-col lg:flex-row gap-8 items-start relative">
+    
+    <!-- Panel: Nuevo Cliente -->
+    <div x-show="mostrarNuevoCliente" 
+         x-transition:enter="transition ease-out duration-300 transform origin-left"
+         x-transition:enter-start="opacity-0 scale-x-95 -translate-x-4"
+         x-transition:enter-end="opacity-100 scale-x-100 translate-x-0"
+         x-transition:leave="transition ease-in duration-200 transform origin-left"
+         x-transition:leave-start="opacity-100 scale-x-100 translate-x-0"
+         x-transition:leave-end="opacity-0 scale-x-95 -translate-x-4"
+         class="w-full lg:w-1/3 glass-panel p-6 rounded-2xl border border-slate-700/50 shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl"></div>
+        
+        <div class="flex items-center justify-between mb-6 border-b border-slate-700/50 pb-4 relative z-10">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mr-4 border border-slate-700">
+                    <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                </div>
+                <h2 class="text-xl font-semibold text-slate-100">Registrar Cliente</h2>
+            </div>
+            <button type="button" @click="mostrarNuevoCliente = false" class="text-slate-400 hover:text-white p-1 rounded transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <form @submit.prevent="submitCliente" class="space-y-4 relative z-10">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Nombre de la Empresa / Cliente *</label>
+                <input x-model="clienteForm.nombre_empresa" type="text" required class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Nombre del Contacto</label>
+                <input x-model="clienteForm.contacto_nombre" type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                    <input x-model="clienteForm.email" type="email" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Teléfono</label>
+                    <input x-model="clienteForm.telefono" type="text" placeholder="Ej: +584248454940 (o 04248454940)" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Se normaliza automáticamente a formato internacional.</span>
+                </div>
+            </div>
+            
+            <!-- Mensajes de estado -->
+            <div x-show="clienteMsg" x-transition class="text-sm px-4 py-3 rounded-lg" :class="clienteError ? 'bg-red-500/10 text-red-400 border border-red-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'" x-text="clienteMsg" style="display: none;"></div>
+            
+            <div class="pt-4 text-right">
+                <button type="submit" :disabled="clienteLoading" class="inline-flex items-center px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors border border-slate-600 disabled:opacity-50">
+                    <span x-show="!clienteLoading">Registrar Cliente</span>
+                    <span x-show="clienteLoading" style="display: none;">Procesando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Panel: Nueva Orden -->
+    <div class="w-full glass-panel p-6 rounded-2xl border border-slate-700/50 shadow-xl relative overflow-hidden transition-all duration-500"
+         :class="mostrarNuevoCliente ? 'lg:w-2/3' : 'flex-1'">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+        
+        <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
+            <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center mr-4 border border-slate-700">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <h2 class="text-xl font-semibold text-slate-100">Crear Orden de Trabajo</h2>
+        </div>
+        
+        <form @submit.prevent="submitOrden(false)" class="space-y-4 relative z-10">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Cliente *</label>
+                <div class="flex gap-2">
+                    <select x-model="ordenForm.cliente_id" @change="onClienteChange()" required class="flex-1 bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <option value="" disabled selected>Seleccione un cliente...</option>
+                        <template x-for="cliente in clientesList" :key="cliente.id">
+                            <option :value="cliente.id" x-text="cliente.nombre_empresa"></option>
+                        </template>
+                    </select>
+                    <button type="button" @click="mostrarNuevoCliente = !mostrarNuevoCliente" class="px-4 bg-violet-600/20 border border-violet-500/50 rounded-lg hover:bg-violet-600/40 text-violet-300 font-medium transition-colors flex items-center" title="Crear nuevo cliente">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Nuevo
+                    </button>
+                    <button type="button" @click="fetchClientes()" class="px-3 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 text-slate-400 transition-colors" title="Actualizar lista">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                </div>
+                <!-- Warning de Deuda -->
+                <template x-if="ordenForm.cliente_id">
+                    <div x-data="{ get c() { return clientesList.find(x => x.id == ordenForm.cliente_id) } }">
+                        <div class="space-y-2 mt-2">
+                            <div x-show="c && c.deuda_pendiente" x-transition class="text-xs font-medium text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded py-2 px-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <span>Nota: Este cliente tiene <strong x-text="c.cantidad_pedidos_pendientes"></strong> pedido(s) anterior(es) con saldo pendiente (Abono o Por Cancelar).</span>
+                            </div>
+                            <div x-show="c && c.saldo_favor > 0" x-transition class="text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded py-2 px-3 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Este cliente tiene un <strong>saldo a favor de $<span x-text="parseFloat(c.saldo_favor).toFixed(2)"></span> USD</strong> disponible.</span>
+                                </div>
+                                <label class="flex items-center space-x-2 cursor-pointer bg-emerald-900/30 px-2.5 py-1 rounded border border-emerald-500/30 hover:bg-emerald-900/50 transition-colors">
+                                    <input type="checkbox" x-model="ordenForm.usar_saldo_favor" class="rounded text-emerald-600 bg-slate-900 border-slate-700 focus:ring-emerald-500 h-3.5 w-3.5">
+                                    <span class="font-semibold select-none text-emerald-300">Aplicar saldo a favor</span>
+                                </label>
+                            </div>
+                            <!-- Historial de Trabajos del Cliente -->
+                            <div x-show="historicoArticulos.length > 0" x-transition class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3 mt-3">
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">¿Repetir un trabajo anterior de este cliente?</label>
+                                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Historial disponible</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <select x-model="historicoSeleccionadoId" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                                        <option value="" selected>-- Seleccione un diseño anterior para cargar --</option>
+                                        <template x-for="art in historicoArticulos" :key="art.id">
+                                            <option :value="art.id" x-text="art.fecha + ' - ' + art.nombre_proyecto"></option>
+                                        </template>
+                                    </select>
+                                    <button type="button" @click="cargarTrabajoHistorico()" class="px-4 bg-emerald-600/20 border border-emerald-500/50 rounded-lg hover:bg-emerald-600/40 text-emerald-300 font-semibold text-sm transition-colors">
+                                        Cargar Datos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Referencia Secuencial</label>
+                    <input x-model="ordenForm.referencia" type="text" readonly class="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg px-4 py-2 text-slate-400 font-mono focus:outline-none cursor-not-allowed opacity-90 transition-all" placeholder="Generando...">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Monto Total Base</label>
+                    <div class="flex gap-2">
+                        <input x-model="ordenForm.monto_total" type="number" step="0.01" min="0" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: 150.00">
+                        <select x-model="ordenForm.moneda" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            <option value="USD">USD</option>
+                            <option value="Bs">Bs</option>
+                        </select>
+                    </div>
+                    <!-- Texto de conversión dinámica -->
+                    <p x-show="ordenForm.monto_total && ordenForm.tasa_bcv" class="text-sm font-medium text-slate-300 mt-1.5 pl-1" x-transition style="display: none;">
+                        Equivalente: 
+                        <span class="font-bold text-emerald-400" x-text="
+                             ordenForm.moneda === 'USD' 
+                             ? 'Bs. ' + (parseFloat(ordenForm.monto_total) * parseFloat(ordenForm.tasa_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+                             : '$ ' + (parseFloat(ordenForm.monto_total) / parseFloat(ordenForm.tasa_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+                        "></span>
+                    </p>
+                    <!-- Campo justificativo obligatorio si el precio es 0 o vacío -->
+                    <div x-show="!ordenForm.monto_total || parseFloat(ordenForm.monto_total) === 0" x-transition class="mt-2" style="display: none;">
+                        <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">Motivo Sin Costo *</label>
+                        <input x-model="ordenForm.motivo_sin_costo" type="text" :required="!ordenForm.monto_total || parseFloat(ordenForm.monto_total) === 0" class="w-full bg-slate-900 border border-amber-500/30 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:ring-1 focus:ring-amber-500 focus:border-transparent transition-all" placeholder="Ej: Garantía, Cortesía, Muestra, etc.">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Tasa BCV del Día</label>
+                    <input x-model="ordenForm.tasa_bcv" type="number" step="0.01" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: 36.50">
+                </div>
+            </div>
+            
+            {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+            <div class="flex items-center mt-2 pl-1 bg-slate-900/30 p-2.5 rounded-lg border border-slate-800 w-fit">
+                <label class="flex items-center text-sm font-medium text-slate-300 cursor-pointer select-none">
+                    <input type="checkbox" x-model="ordenForm.ocultar_precio_ventas" class="mr-3 w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900">
+                    Ocultar Monto de Facturación a Ventas (Rol Limitado)
+                </label>
+            </div>
+            {% endif %}
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Estado de Pago *</label>
+                    <select x-model="ordenForm.estado_pago" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <option value="Por Cancelar">Por Cancelar</option>
+                        <option value="Abono">Abono</option>
+                        <option value="Cancelado">Cancelado (Pagado Completo)</option>
+                    </select>
+                </div>
+                
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4" x-show="ordenForm.estado_pago !== 'Por Cancelar'" x-transition>
+                <div x-show="ordenForm.estado_pago === 'Abono'">
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Monto Abonado ($) *</label>
+                    <input x-model="ordenForm.monto_abono" type="number" step="0.01" :required="ordenForm.estado_pago === 'Abono'" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: 50.00">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Método de Pago *</label>
+                    <select x-model="ordenForm.metodo_pago" :required="ordenForm.estado_pago !== 'Por Cancelar'" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="Pago Móvil">Pago Móvil</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Efectivo Bs">Efectivo Bs</option>
+                        <option value="Efectivo $">Efectivo $</option>
+                        <option value="Zelle">Zelle</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Referencia / Notas</label>
+                    <input x-model="ordenForm.notas_pago" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: Ref 12345">
+                </div>
+            </div>
+            </div>
+            
+            <div class="mt-4 border-t border-slate-700/50 pt-4">
+                <h3 class="text-sm font-medium text-slate-300 mb-3 flex justify-between items-center">
+                    Artículos del Pedido
+                    <button type="button" @click="agregarArticulo" class="text-xs text-blue-400 hover:text-blue-300 bg-blue-900/20 px-2 py-1 rounded">
+                        + Añadir Artículo
+                    </button>
+                </h3>
+                
+                <template x-for="(articulo, index) in ordenForm.articulos" :key="index">
+                    <div class="bg-slate-800/50 p-4 rounded-lg mb-3 border border-slate-700 relative">
+                        <button type="button" x-show="ordenForm.articulos.length > 1" @click="eliminarArticulo(index)" class="absolute top-2 right-2 text-red-400 hover:text-red-300" title="Eliminar artículo">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Tipo de Trabajo *</label>
+                                <select x-model="articulo.tipo_trabajo" @change="articulo.material = ''; if(articulo.tipo_trabajo === 'Sticker') { articulo.cantidad = 1; articulo.instalacion_pvc = false; articulo.grosor_pvc = ''; } if(!['Sticker', 'Impresión y Corte', 'Impresión'].includes(articulo.tipo_trabajo)) { articulo.laminado = false; }; $nextTick(() => recalcularPrecio(index));" required class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <option value="" disabled selected>Seleccione...</option>
+                                    <option value="Impresión">Impresión</option>
+                                    <option value="Impresión y Corte">Impresión y Corte</option>
+                                    <option value="Impresión UV">Impresión UV</option>
+                                    <option value="Sticker">Sticker</option>
+                                    <option value="Corte Vinil">Corte Vinil</option>
+                                    <option value="Corte Acrílico">Corte Acrílico</option>
+                                    <option value="Corpórea">Corpórea</option>
+                                    <option value="Banner">Banner</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                               <div x-show="['Impresión', 'Impresión y Corte', 'Sticker', 'Impresión UV', 'Banner', 'Corte Vinil', 'Corte Acrílico'].includes(articulo.tipo_trabajo)">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Material</label>
+                                <select x-model="articulo.material" @change="$nextTick(() => { if(['Microperforado', 'Vinil Transparente'].includes(articulo.material)) { articulo.laminado = false; }; recalcularPrecio(index); })" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <option value="">N/A</option>
+                                    <template x-for="mat in getMaterialesDisponibles(articulo.tipo_trabajo)" :key="mat">
+                                        <option :value="mat" x-text="mat"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid gap-3 mb-3" :class="articulo.tipo_trabajo === 'Sticker' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1" x-text="articulo.tipo_trabajo === 'Sticker' ? 'Metraje (Largo)' : 'Medidas (Ancho x Alto)'"></label>
+                                
+                                <!-- Contenedor de 3 inputs (Normal) -->
+                                <div x-show="articulo.tipo_trabajo !== 'Sticker'" class="flex items-center space-x-1">
+                                    <input x-model="articulo.medida_ancho" @input.debounce.500ms="recalcularPrecio(index)" type="number" step="0.01" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all text-center" placeholder="Ancho">
+                                    <span class="text-slate-500 font-medium text-sm">x</span>
+                                    <input x-model="articulo.medida_alto" @input.debounce.500ms="recalcularPrecio(index)" type="number" step="0.01" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all text-center" placeholder="Alto">
+                                    <select x-model="articulo.medida_unidad" @change="$nextTick(() => recalcularPrecio(index))" class="bg-slate-900 border border-slate-700 rounded-md px-1 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
+                                        <option value="cm">cm</option>
+                                        <option value="m">m</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Select metraje (Sticker) -->
+                                <select x-show="articulo.tipo_trabajo === 'Sticker'" x-model="articulo.medidas" @change="$nextTick(() => recalcularPrecio(index))" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <option value="" disabled selected>Seleccione metraje...</option>
+                                    <option value="1/4 Metro">1/4 Metro</option>
+                                    <option value="1/2 Metro">1/2 Metro</option>
+                                    <option value="1 Metro">1 Metro</option>
+                                    <option value="1.5 Metros">1.5 Metros</option>
+                                    <option value="2 Metros">2 Metros</option>
+                                    <option value="2.5 Metros">2.5 Metros</option>
+                                    <option value="3 Metros">3 Metros</option>
+                                    <option value="4 Metros">4 Metros</option>
+                                    <option value="5 Metros">5 Metros</option>
+                                    <option value="Más de 5 Metros (Especificar)">Más de 5 Metros (Especificar en adicionales)</option>
+                                </select>
+                            </div>
+                            <div x-show="articulo.tipo_trabajo !== 'Sticker'">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Cantidad</label>
+                                <input x-model="articulo.cantidad" @input.debounce.500ms="recalcularPrecio(index)" type="number" min="1" :required="articulo.tipo_trabajo !== 'Sticker'" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="1">
+                            </div>
+                        </div>
+                        
+                        <!-- Laminado (Condicional) -->
+                        <div class="mb-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/60 transition-all" 
+                             x-show="['Sticker', 'Impresión y Corte', 'Impresión'].includes(articulo.tipo_trabajo) && articulo.material && !['Microperforado', 'Vinil Transparente'].includes(articulo.material)">
+                            <div class="flex items-center">
+                                <label class="flex items-center text-sm font-medium text-slate-300 cursor-pointer">
+                                    <input type="checkbox" x-model="articulo.laminado" @change="$nextTick(() => recalcularPrecio(index))" class="mr-3 w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900">
+                                    Llevar Laminado (Vinil Transparente)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Instalación en PVC (Condicional) -->
+                        <div class="mb-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/60 transition-all" 
+                             x-show="['Impresión', 'Impresión y Corte'].includes(articulo.tipo_trabajo) && articulo.material && articulo.material.includes('Vinil')">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center text-sm font-medium text-slate-300 cursor-pointer">
+                                    <input type="checkbox" x-model="articulo.instalacion_pvc" @change="$nextTick(() => { if(!articulo.instalacion_pvc) { articulo.grosor_pvc = ''; }; recalcularPrecio(index); })" class="mr-3 w-4 h-4 rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900">
+                                    Instalación en Tablero PVC
+                                </label>
+                                
+                                <div x-show="articulo.instalacion_pvc" class="flex items-center space-x-2" x-transition>
+                                    <label class="text-xs text-slate-400">Grosor:</label>
+                                    <select x-model="articulo.grosor_pvc" :required="articulo.instalacion_pvc" @change="$nextTick(() => recalcularPrecio(index))" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
+                                        <option value="" disabled selected>Milímetros...</option>
+                                        <template x-for="grosor in getGrosoresPVC()" :key="grosor">
+                                            <option :value="grosor" x-text="grosor.includes('mm') ? grosor.replace('mm', ' mm') : grosor"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Acabados Banner (Condicional) -->
+                        <div class="mb-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/60 transition-all" 
+                             x-show="articulo.tipo_trabajo === 'Banner'">
+                            <div class="flex items-center space-x-2 w-full">
+                                <label class="text-xs font-medium text-slate-400 whitespace-nowrap">Acabado:</label>
+                                <select x-model="articulo.acabado_banner" @change="$nextTick(() => recalcularPrecio(index))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <option value="">Ninguno</option>
+                                    <template x-for="acabado in getAcabadosBanner()" :key="acabado">
+                                        <option :value="acabado" x-text="acabado"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Instalación General (Condicional) -->
+                        <div class="mb-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/60 transition-all" 
+                             x-show="['Impresión', 'Impresión y Corte', 'Impresión UV', 'Corte Vinil', 'Banner', 'Corpórea'].includes(articulo.tipo_trabajo)">
+                            <div class="flex items-center">
+                                <label class="flex items-center text-sm font-medium text-slate-300 cursor-pointer">
+                                    <input type="checkbox" x-model="articulo.requiere_instalacion" class="mr-3 w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-slate-900">
+                                    Requiere Instalación / Montaje en Sitio
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Especificaciones Adicionales</label>
+                                <textarea x-model="articulo.specs" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all custom-scrollbar" placeholder="Acabados, detalles de corte..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-emerald-400 mb-1">Enlace a Recursos (Drive, WeTransfer...)</label>
+                                <textarea x-model="articulo.enlace_recursos" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition-all custom-scrollbar" placeholder="https://drive.google.com/..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-t border-slate-700/50">
+                            <label class="block text-xs font-medium text-violet-400 mb-1 flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                Asignación Directa de Diseñador (Opcional)
+                            </label>
+                            <select x-model="articulo.disenador_id" class="w-full sm:w-1/2 bg-slate-900/50 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-violet-500 focus:border-transparent transition-all">
+                                <option value="">Sin asignar (Mandar a Cola General)</option>
+                                <template x-for="disenador in disenadoresList" :key="disenador.id">
+                                    <option :value="disenador.id" x-text="`${disenador.nombre} (${disenador.carga_trabajo} tareas activas)`"></option>
+                                </template>
+                            </select>
+                        </div>
+                        
+                        <!-- Cotización Especial Checkbox -->
+                        <div class="mt-3 pt-3 border-t border-slate-700/50">
+                            <div class="p-3 bg-amber-950/10 rounded-lg border border-amber-900/40 transition-all flex items-center justify-between">
+                                <label class="flex items-center text-sm font-medium text-amber-300 cursor-pointer select-none">
+                                    <input type="checkbox" x-model="articulo.requiere_cotizacion_especial" @change="$nextTick(() => { if(articulo.requiere_cotizacion_especial) { articulo.precio_estimado = 0.0; } else { recalcularPrecio(index); } })" class="mr-3 w-4 h-4 rounded border-amber-700 bg-slate-800 text-amber-600 focus:ring-amber-500 focus:ring-offset-slate-900">
+                                    Cotización Especial (Requiere Aprobación de Gerencia)
+                                </label>
+                                <span x-show="articulo.requiere_cotizacion_especial" class="text-xs font-semibold text-amber-400 bg-amber-900/40 px-2 py-0.5 rounded border border-amber-850">Por definir</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Previsualización de precio de este artículo -->
+                        <div x-show="articulo.precio_estimado > 0 && !articulo.requiere_cotizacion_especial" x-transition class="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center bg-slate-900/30 p-3 rounded-lg border border-slate-800">
+                            <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Costo Estimado Artículo:</span>
+                            <div class="text-right">
+                                <span class="text-lg font-bold font-mono text-emerald-400" x-text="'$' + parseFloat(articulo.precio_estimado || 0).toFixed(2)"></span>
+                                <span class="text-xs text-slate-500 block" x-show="articulo.area_m2" x-text="parseFloat(articulo.area_m2).toFixed(2) + ' m²'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Desglose de Costo Detallado -->
+                        <div x-show="articulo.precio_estimado > 0 && !articulo.requiere_cotizacion_especial" x-transition class="mt-2 text-xs text-slate-400 space-y-1 bg-slate-900/10 p-3 rounded-lg border border-slate-800/80">
+                            <div class="flex justify-between">
+                                <span>Costo Base Material:</span>
+                                <span class="font-mono text-slate-300" x-text="'$' + parseFloat(articulo.costo_base || 0).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between" x-show="articulo.costo_laminado > 0">
+                                <span>Costo Laminado:</span>
+                                <span class="font-mono text-slate-300" x-text="'$' + parseFloat(articulo.costo_laminado || 0).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between" x-show="articulo.costo_pvc > 0">
+                                <span>Costo Tablero PVC:</span>
+                                <span class="font-mono text-slate-300" x-text="'$' + parseFloat(articulo.costo_pvc || 0).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between" x-show="articulo.costo_acabado > 0">
+                                <span>Costo Acabados / Bastidor:</span>
+                                <span class="font-mono text-slate-300" x-text="'$' + parseFloat(articulo.costo_acabado || 0).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between text-amber-400 font-semibold border-t border-slate-800 pt-1 mt-1" x-show="articulo.precio_minimo_aplicado">
+                                <span>Monto Mínimo Aplicado:</span>
+                                <span class="font-mono" x-text="'$' + parseFloat(articulo.precio_minimo_valor || 0).toFixed(2) + ' /ud'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Mensajes de estado -->
+            <div x-show="ordenMsg" x-transition class="text-sm px-4 py-3 rounded-lg" :class="ordenError ? 'bg-red-500/10 text-red-400 border border-red-500/30' : 'bg-blue-500/10 text-blue-400 border border-blue-500/30'" style="display: none;">
+                <span x-text="ordenMsg"></span>
+                <template x-if="!ordenError && ordenRuta">
+                    <div class="mt-3">
+                        <button type="button" @click="abrirCarpetaEnServidor(ordenRuta)" class="inline-flex items-center text-xs font-medium bg-blue-600/20 hover:bg-blue-500/30 text-blue-300 px-3 py-1.5 rounded border border-blue-500/30 transition-colors">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                            Abrir Carpeta para depositar archivos
+                        </button>
+                        <p class="mt-2 text-xs font-mono break-all opacity-80" x-text="ordenRuta"></p>
+                    </div>
+                </template>
+            </div>
+            
+            <div class="pt-2 text-right border-t border-slate-700/50 mt-6 flex justify-end gap-3">
+                <button type="button" @click="submitOrden(true)" :disabled="ordenLoading || ordenForm.articulos.length === 0" class="inline-flex items-center px-6 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-300 font-medium rounded-lg transition-colors disabled:opacity-50">
+                    <span>Guardar como Borrador</span>
+                </button>
+                <button type="button" @click="submitOrden(false)" :disabled="ordenLoading || ordenForm.articulos.length === 0" class="inline-flex items-center px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                    <span x-show="!ordenLoading">Generar Pedido y Carpetas</span>
+                    <span x-show="ordenLoading" style="display: none;">Procesando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('recepcionModule', () => ({
+            mostrarNuevoCliente: false,
+            
+            initModule() {
+                this.fetchClientes();
+                this.generarReferencia();
+                this.fetchBCV();
+                this.fetchDisenadores();
+                this.fetchPrecios();
+            },
+            
+            // Estado de Clientes
+            clientesList: [],
+            disenadoresList: [],
+            preciosList: [],
+            clienteForm: { nombre_empresa: '', contacto_nombre: '', email: '', telefono: '' },
+            clienteLoading: false,
+            clienteError: false,
+            clienteMsg: '',
+            historicoArticulos: [],
+            historicoSeleccionadoId: '',
+            
+            // Estado de Pedidos
+            ordenForm: { 
+                cliente_id: '', 
+                referencia: '',
+                monto_total: '',
+                moneda: 'USD',
+                tasa_bcv: '',
+                estado_pago: 'Por Cancelar',
+                monto_abono: '',
+                metodo_pago: '',
+                notas_pago: '',
+                usar_saldo_favor: false,
+                ocultar_precio_ventas: false,
+                motivo_sin_costo: '',
+                articulos: [ {tipo_trabajo: '', material: '', medidas: '', medida_ancho: '', medida_alto: '', medida_unidad: 'cm', cantidad: 1, specs: '', instalacion_pvc: false, grosor_pvc: '', acabado_banner: '', material_bastidor: '', requiere_instalacion: false, enlace_recursos: '', disenador_id: '', laminado: false, precio_estimado: 0.0, area_m2: 0.0, requiere_cotizacion_especial: false, costo_base: 0.0, costo_laminado: 0.0, costo_pvc: 0.0, costo_acabado: 0.0, precio_minimo_aplicado: false, precio_minimo_valor: 0.0} ] 
+            },
+            ordenLoading: false,
+            ordenError: false,
+            ordenMsg: '',
+            ordenRuta: '',
+            
+            async generarReferencia() {
+                try {
+                    const res = await fetch('/api/siguiente-referencia');
+                    if(res.ok) {
+                        const data = await res.json();
+                        this.ordenForm.referencia = data.referencia;
+                    }
+                } catch(e) {
+                    console.error("Error al obtener la referencia secuencial", e);
+                }
+            },
+
+            async onClienteChange() {
+                const clienteId = this.ordenForm.cliente_id;
+                if (!clienteId) {
+                    this.historicoArticulos = [];
+                    this.historicoSeleccionadoId = '';
+                    return;
+                }
+                
+                this.historicoArticulos = [];
+                this.historicoSeleccionadoId = '';
+                
+                try {
+                    const res = await fetch(`/api/clientes/${clienteId}/historico-articulos`);
+                    if (res.ok) {
+                        this.historicoArticulos = await res.json();
+                    }
+                } catch(e) {
+                    console.error("Error al obtener histórico", e);
+                }
+            },
+
+            cargarTrabajoHistorico() {
+                if (!this.historicoSeleccionadoId) {
+                    alert("Por favor seleccione un trabajo anterior.");
+                    return;
+                }
+                const artPrevio = this.historicoArticulos.find(a => a.id == this.historicoSeleccionadoId);
+                if (!artPrevio) return;
+                
+                const nuevoArt = {
+                    tipo_trabajo: '',
+                    material: '',
+                    medidas: '',
+                    medida_ancho: '',
+                    medida_alto: '',
+                    medida_unidad: 'cm',
+                    cantidad: 1,
+                    specs: artPrevio.especificaciones || '',
+                    instalacion_pvc: false,
+                    grosor_pvc: '',
+                    acabado_banner: '',
+                    material_bastidor: '',
+                    requiere_instalacion: false,
+                    enlace_recursos: '',
+                    disenador_id: artPrevio.disenador_id || '',
+                    laminado: false,
+                    precio_estimado: 0.0,
+                    area_m2: 0.0,
+                    requiere_cotizacion_especial: false,
+                    duplicar_de_articulo_id: artPrevio.id,
+                    nombre_proyecto_manual: artPrevio.nombre_proyecto
+                };
+                
+                if (this.ordenForm.articulos.length === 1 && !this.ordenForm.articulos[0].tipo_trabajo && !this.ordenForm.articulos[0].specs) {
+                    this.ordenForm.articulos[0] = nuevoArt;
+                } else {
+                    this.ordenForm.articulos.push(nuevoArt);
+                }
+                
+                alert(`¡Detalles de "${artPrevio.nombre_proyecto}" cargados en la orden!`);
+            },
+            
+            agregarArticulo() {
+                this.ordenForm.articulos.push({tipo_trabajo: '', material: '', medidas: '', medida_ancho: '', medida_alto: '', medida_unidad: 'cm', cantidad: 1, specs: '', instalacion_pvc: false, grosor_pvc: '', acabado_banner: '', material_bastidor: '', requiere_instalacion: false, enlace_recursos: '', disenador_id: '', laminado: false, precio_estimado: 0.0, area_m2: 0.0, requiere_cotizacion_especial: false, costo_base: 0.0, costo_laminado: 0.0, costo_pvc: 0.0, costo_acabado: 0.0, precio_minimo_aplicado: false, precio_minimo_valor: 0.0});
+            },
+            
+            eliminarArticulo(index) {
+                this.ordenForm.articulos.splice(index, 1);
+                this.actualizarMontoTotal();
+            },
+
+            async recalcularPrecio(index) {
+                const art = this.ordenForm.articulos[index];
+                if (art.requiere_cotizacion_especial) {
+                    art.precio_estimado = 0.0;
+                    art.area_m2 = 0.0;
+                    this.actualizarMontoTotal();
+                    return;
+                }
+                if (!art.tipo_trabajo || !art.material) {
+                    art.precio_estimado = 0.0;
+                    art.area_m2 = 0.0;
+                    this.actualizarMontoTotal();
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/precios/calcular', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            tipo_trabajo: art.tipo_trabajo,
+                            material: art.material,
+                            medidas: art.medidas,
+                            medida_ancho: art.medida_ancho,
+                            medida_alto: art.medida_alto,
+                            medida_unidad: art.medida_unidad,
+                            cantidad: art.cantidad,
+                            laminado: art.laminado,
+                            instalacion_pvc: art.instalacion_pvc,
+                            grosor_pvc: art.grosor_pvc
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        art.precio_estimado = data.subtotal || 0.0;
+                        art.area_m2 = data.area_m2 || 0.0;
+                        art.costo_base = data.costo_base || 0.0;
+                        art.costo_laminado = data.costo_laminado || 0.0;
+                        art.costo_pvc = data.costo_pvc || 0.0;
+                        art.costo_acabado = data.costo_acabado || 0.0;
+                        art.precio_minimo_aplicado = data.precio_minimo_aplicado || false;
+                        art.precio_minimo_valor = data.precio_minimo_valor || 0.0;
+                    } else {
+                        art.precio_estimado = 0.0;
+                        art.area_m2 = 0.0;
+                        art.costo_base = 0.0;
+                        art.costo_laminado = 0.0;
+                        art.costo_pvc = 0.0;
+                        art.costo_acabado = 0.0;
+                        art.precio_minimo_aplicado = false;
+                        art.precio_minimo_valor = 0.0;
+                    }
+                } catch(e) {
+                    console.error("Error al calcular el precio del artículo", e);
+                    art.precio_estimado = 0.0;
+                    art.area_m2 = 0.0;
+                }
+                this.actualizarMontoTotal();
+            },
+
+            actualizarMontoTotal() {
+                let total = 0.0;
+                this.ordenForm.articulos.forEach(art => {
+                    total += parseFloat(art.precio_estimado || 0.0);
+                });
+                this.ordenForm.monto_total = total > 0 ? total.toFixed(2) : '';
+            },
+            async fetchDisenadores() {
+                try {
+                    const res = await fetch('/api/disenadores');
+                    if(res.ok) {
+                        this.disenadoresList = await res.json();
+                    }
+                } catch(e) {
+                    console.error("Error al cargar diseñadores", e);
+                }
+            },
+            
+            async fetchClientes() {
+                try {
+                    const res = await fetch('/api/clientes');
+                    if(res.ok) {
+                        this.clientesList = await res.json();
+                    }
+                } catch(e) {
+                    console.error("Error al cargar clientes", e);
+                }
+            },
+            
+            async fetchBCV() {
+                try {
+                    const res = await fetch('/api/bcv');
+                    if(res.ok) {
+                        const data = await res.json();
+                        if(data.tasa) {
+                            this.ordenForm.tasa_bcv = data.tasa;
+                        }
+                    }
+                } catch(e) {
+                    console.error("Error al obtener la tasa del BCV", e);
+                }
+            },
+            
+            async fetchPrecios() {
+                try {
+                    const res = await fetch('/api/precios/listar');
+                    if(res.ok) {
+                        this.preciosList = await res.json();
+                    }
+                } catch(e) {
+                    console.error("Error al cargar tarifas", e);
+                }
+            },
+            
+            getMaterialesDisponibles(tipoTrabajo) {
+                if (!tipoTrabajo || !this.preciosList) return [];
+                let items = this.preciosList.filter(p => p.tipo_trabajo === tipoTrabajo && !p.es_adicional);
+                return [...new Set(items.map(p => p.material))];
+            },
+            
+            getAcabadosBanner() {
+                if (!this.preciosList) return [];
+                let items = this.preciosList.filter(p => p.tipo_trabajo === 'Banner' && p.es_adicional);
+                return [...new Set(items.map(p => p.material))];
+            },
+            
+            getGrosoresPVC() {
+                if (!this.preciosList) return [];
+                let items = this.preciosList.filter(p => p.tipo_trabajo === 'Tablero PVC' && p.es_adicional);
+                return [...new Set(items.map(p => p.material))];
+            },
+            
+            async submitCliente() {
+                this.clienteLoading = true;
+                this.clienteMsg = '';
+                try {
+                    const res = await fetch('/api/clientes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.clienteForm)
+                    });
+                    const data = await res.json();
+                    
+                    if(res.ok) {
+                        this.clienteError = false;
+                        this.clienteMsg = `Cliente registrado (Master Data creada en ${data.ruta_master_data})`;
+                        this.clienteForm = { nombre_empresa: '', contacto_nombre: '', email: '', telefono: '' };
+                        this.fetchClientes(); // Actualizar el select
+                        setTimeout(() => { this.mostrarNuevoCliente = false; this.clienteMsg = ''; }, 2500);
+                    } else {
+                        this.clienteError = true;
+                        this.clienteMsg = data.error;
+                    }
+                } catch(e) {
+                    this.clienteError = true;
+                    this.clienteMsg = "Error de conexión";
+                } finally {
+                    this.clienteLoading = false;
+                }
+            },
+            
+            async submitOrden(esBorrador = false) {
+                this.ordenLoading = true;
+                this.ordenMsg = '';
+                this.ordenRuta = '';
+                try {
+                    const res = await fetch('/api/ordenes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            cliente_id: this.ordenForm.cliente_id,
+                            creador_id: 1, // HARDCODED for now
+                            referencia: this.ordenForm.referencia,
+                            monto_total: this.ordenForm.monto_total ? parseFloat(this.ordenForm.monto_total) : null,
+                            moneda: this.ordenForm.moneda,
+                            tasa_bcv: this.ordenForm.tasa_bcv ? parseFloat(this.ordenForm.tasa_bcv) : null,
+                            estado_pago: this.ordenForm.estado_pago,
+                            monto_abono: this.ordenForm.estado_pago === 'Abono' 
+                                ? (this.ordenForm.notas_pago ? `${this.ordenForm.monto_abono} (${this.ordenForm.notas_pago})` : this.ordenForm.monto_abono) 
+                                : (this.ordenForm.estado_pago === 'Cancelado' ? `Cancelado (${this.ordenForm.notas_pago || 'Pago completo'})` : ''),
+                            metodo_pago: this.ordenForm.metodo_pago,
+                            usar_saldo_favor: this.ordenForm.usar_saldo_favor,
+                            es_borrador: esBorrador,
+                            ocultar_precio_ventas: this.ordenForm.ocultar_precio_ventas,
+                            motivo_sin_costo: this.ordenForm.motivo_sin_costo || '',
+                            articulos: this.ordenForm.articulos
+                        })
+                    });
+                    const data = await res.json();
+                    
+                    if(res.ok) {
+                        this.ordenError = false;
+                        if (esBorrador) {
+                            this.ordenMsg = `¡Borrador de Pedido #${data.pedido_id} guardado con éxito!`;
+                        } else {
+                            this.ordenMsg = `¡Pedido #${data.pedido_id} generado con éxito (${data.articulos_creados} artículos)!`;
+                        }
+                        this.ordenRuta = data.ruta_archivos;
+                        this.ordenForm = { cliente_id: '', referencia: '', monto_total: '', moneda: 'USD', tasa_bcv: '', estado_pago: 'Por Cancelar', monto_abono: '', metodo_pago: '', notas_pago: '', usar_saldo_favor: false, ocultar_precio_ventas: false, motivo_sin_costo: '', articulos: [ {tipo_trabajo: '', material: '', medidas: '', medida_ancho: '', medida_alto: '', medida_unidad: 'cm', cantidad: 1, specs: '', instalacion_pvc: false, grosor_pvc: '', acabado_banner: '', material_bastidor: '', requiere_instalacion: false, enlace_recursos: '', disenador_id: '', laminado: false, precio_estimado: 0.0, area_m2: 0.0, requiere_cotizacion_especial: false} ] };
+                    } else {
+                        this.ordenError = true;
+                        this.ordenMsg = data.error;
+                    }
+                } catch(e) {
+                    this.ordenError = true;
+                    this.ordenMsg = "Error de conexión";
+                } finally {
+                    this.ordenLoading = false;
+                }
+            },
+            
+            abrirCarpetaEnServidor(ruta) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(ruta).catch(() => {});
+                }
+                const utf8Ruta = unescape(encodeURIComponent(ruta));
+                const rutaCodificada = btoa(utf8Ruta);
+                window.location.href = `taskcore://${rutaCodificada}?server=${window.location.hostname}`;
+            }
+        }));
+    });
+</script>
+{% endblock %}

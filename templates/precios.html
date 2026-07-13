@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Administración de Precios - TaskCore{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="preciosAdmin()">
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-white">Tarifas y Precios de Materiales</h1>
+            <p class="text-sm text-slate-400 mt-1">Configura los costos de materiales y acabados/adicionales para cotizaciones automáticas.</p>
+        </div>
+        <button @click="abrirModalCrear()" class="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Agregar Tarifa
+        </button>
+    </div>
+
+    <!-- Configuración de Redondeo -->
+    <div class="glass p-4 rounded-xl flex flex-col sm:flex-row gap-4 items-center justify-between border border-slate-800">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-violet-600/20 text-violet-400 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-white">Política de Redondeo de Cotizaciones</h3>
+                <p class="text-xs text-slate-400">Afecta cómo se computa el costo subtotal por cada artículo en las órdenes de trabajo.</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <select x-model="redondeo" @change="guardarRedondeo()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all w-full sm:w-64">
+                <option value="exacto">Mantener exactos (Con decimales)</option>
+                <option value="entero_superior">Redondear al entero superior (Ceil)</option>
+                <option value="decimal_cercano">Redondear al decimal más cercano (.50)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Configuración de Precio Mínimo por Artículo -->
+    <div class="glass p-4 rounded-xl flex flex-col sm:flex-row gap-4 items-center justify-between border border-slate-800">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-emerald-600/20 text-emerald-400 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-white">Precio Mínimo por Artículo</h3>
+                <p class="text-xs text-slate-400">Establece una tarifa base fija en dólares para pedidos pequeños cuyos metros cuadrados den un monto inferior.</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <div class="relative w-full sm:w-64">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                <input x-model.number="precioMinimo" @change="guardarPrecioMinimo()" type="number" step="0.01" min="0" class="block w-full pl-7 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all font-mono">
+            </div>
+        </div>
+    </div>
+    <!-- Tabs de Selección -->
+    <div class="flex space-x-1 border-b border-slate-800 pb-px mb-6">
+        <button @click="tabActiva = 'materiales'; filtroTipo = ''; search = '';"
+                :class="tabActiva === 'materiales' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-400 hover:text-slate-200'"
+                class="px-4 py-2.5 text-sm transition-all focus:outline-none flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            Materiales Base
+        </button>
+        <button @click="tabActiva = 'adicionales'; filtroTipo = ''; search = '';"
+                :class="tabActiva === 'adicionales' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-400 hover:text-slate-200'"
+                class="px-4 py-2.5 text-sm transition-all focus:outline-none flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            Acabados y Adicionales
+        </button>
+    </div>
+
+    <!-- Buscador y Filtros -->
+    <div class="glass p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full md:max-w-md">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <input x-model="search" type="text" class="block w-full pl-10 pr-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" placeholder="Buscar material o tipo de trabajo...">
+        </div>
+        <div class="flex gap-2 w-full md:w-auto">
+            <select x-model="filtroTipo" class="block w-full md:w-48 px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-300 focus:outline-none focus:border-blue-500">
+                <option value="">Todos los Trabajos</option>
+                <template x-for="tipo in getTiposDisponiblesFiltro()" :key="tipo">
+                    <option :value="tipo" x-text="tipo"></option>
+                </template>
+            </select>
+        </div>
+    </div>
+
+    <!-- Listado de Precios -->
+    <div class="glass-panel rounded-xl overflow-hidden border border-slate-800">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-800">
+                <thead class="bg-slate-900/80">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Tipo de Trabajo' : 'Categoría'"></th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Material / Sustrato' : 'Variación / Acabado'"></th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Precio Base / m²' : 'Precio Unitario o m²'"></th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider pr-6">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/50 bg-slate-950/20">
+                    <template x-for="p in filtrarPrecios()" :key="p.id">
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                      :class="{
+                                          'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50': p.tipo_trabajo === 'Sticker',
+                                          'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50': p.tipo_trabajo === 'Impresión',
+                                          'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50': p.tipo_trabajo === 'Impresión y Corte',
+                                          'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50': p.tipo_trabajo === 'Impresión UV',
+                                          'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50': p.tipo_trabajo === 'Banner',
+                                          'bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800/50': p.tipo_trabajo === 'Corte Vinil',
+                                          'bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50': p.tipo_trabajo === 'Corte Acrílico',
+                                          'bg-slate-100 dark:bg-slate-900/60 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700': p.tipo_trabajo === 'Tablero PVC'
+                                      }"
+                                      x-text="p.tipo_trabajo === 'Tablero PVC' ? 'Tableros PVC' : p.tipo_trabajo"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200" x-text="p.tipo_trabajo === 'Tablero PVC' ? 'Instalación PVC ' + p.material.replace('mm', ' mm') : p.material"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono" x-text="'$' + p.precio_m2.toFixed(2)"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium pr-6 space-x-2">
+                                <button @click="abrirModalEditar(p)" class="text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 px-2.5 py-1 rounded transition-colors">Editar</button>
+                                <button @click="eliminarPrecio(p.id)" class="text-red-400 hover:text-red-300 bg-red-900/20 hover:bg-red-900/40 px-2.5 py-1 rounded transition-colors">Eliminar</button>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="filtrarPrecios().length === 0">
+                        <td colspan="4" class="px-6 py-8 text-center text-slate-500 text-sm italic">
+                            No se encontraron registros.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Formulario Tarifa (Crear/Editar) -->
+    <div x-show="modalAbierto" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" style="display: none;" x-transition>
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden" @click.away="modalAbierto = false">
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-950/50">
+                <h3 class="text-lg font-bold text-white" x-text="form.id ? 'Modificar Tarifa' : 'Nueva Tarifa'"></h3>
+                <button @click="modalAbierto = false" class="text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form @submit.prevent="guardarPrecio" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">1. Selecciona Tipo de Trabajo</label>
+                    <select x-model="form.tipo_trabajo" required class="block w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                        <option value="">Seleccione...</option>
+                        <template x-for="tipo in tiposTrabajo" :key="tipo">
+                            <option :value="tipo" x-text="tipo"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">2. Determina Tipo de Tarifa</label>
+                    <div class="flex items-center space-x-6 mt-1">
+                        <label class="inline-flex items-center text-sm text-slate-200 cursor-pointer">
+                            <input type="radio" :checked="!form.es_adicional" @change="form.es_adicional = false" :value="false" name="es_adicional" class="form-radio text-blue-600 bg-slate-950 border-slate-700 focus:ring-blue-500">
+                            <span class="ml-2">Material Base</span>
+                        </label>
+                        <label class="inline-flex items-center text-sm text-slate-200 cursor-pointer">
+                            <input type="radio" :checked="form.es_adicional" @change="form.es_adicional = true" :value="true" name="es_adicional" class="form-radio text-blue-600 bg-slate-950 border-slate-700 focus:ring-blue-500">
+                            <span class="ml-2">Acabado o Adicional</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2" x-text="form.es_adicional ? '3. Describe qué Acabado/Adicional es' : '3. Describe qué Material Base es'"></label>
+                    <input x-model="form.material" type="text" required class="block w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500" :placeholder="form.es_adicional ? 'ej. Laminado, Bastidor Madera, Ojetes' : 'ej. Vinil Brillante, Lona Banner 13oz'">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">4. Precio por m² o Unidad</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
+                        <input x-model.number="form.precio_m2" type="number" step="0.01" min="0" required class="block w-full pl-7 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-800 flex justify-end gap-2">
+                    <button type="button" @click="modalAbierto = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-sm transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">Guardar Tarifa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('preciosAdmin', () => ({
+            tabActiva: 'materiales',
+            precios: [],
+            tiposTrabajo: {{ tipos_trabajo | tojson }},
+            search: '',
+            filtroTipo: '',
+            modalAbierto: false,
+            redondeo: 'exacto',
+            precioMinimo: 0.0,
+            form: {
+                id: null,
+                tipo_trabajo: '',
+                material: '',
+                precio_m2: 0.0,
+                es_adicional: false
+            },
+
+            async init() {
+                // Cargar datos del servidor renderizados por flask
+                this.precios = [
+                    {% for p in precios %}
+                    {
+                        id: {{ p.id }},
+                        tipo_trabajo: "{{ p.tipo_trabajo }}",
+                        material: "{{ p.material }}",
+                        precio_m2: {{ p.precio_m2 }},
+                        es_adicional: {{ 'true' if p.es_adicional else 'false' }}
+                    },
+                    {% endfor %}
+                ];
+                
+                // Cargar configuración de redondeo global
+                try {
+                    const res = await fetch('/api/configuracion/redondeo');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.redondeo = data.valor;
+                    }
+                } catch (e) {
+                    console.error("Error cargando redondeo:", e);
+                }
+
+                // Cargar configuración de precio mínimo global
+                try {
+                    const res = await fetch('/api/configuracion/precio_minimo');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.precioMinimo = parseFloat(data.valor);
+                    }
+                } catch (e) {
+                    console.error("Error cargando precio mínimo:", e);
+                }
+            },
+
+            async guardarRedondeo() {
+                try {
+                    const res = await fetch('/api/configuracion/redondeo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ valor: this.redondeo })
+                    });
+                    if (!res.ok) {
+                        alert("Error guardando redondeo");
+                    }
+                } catch (e) {
+                    console.error("Error guardando redondeo:", e);
+                    alert("Error en la conexión con el servidor.");
+                }
+            },
+
+            async guardarPrecioMinimo() {
+                try {
+                    const res = await fetch('/api/configuracion/precio_minimo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ valor: String(this.precioMinimo) })
+                    });
+                    if (!res.ok) {
+                        alert("Error guardando precio mínimo");
+                    }
+                } catch (e) {
+                    console.error("Error guardando precio mínimo:", e);
+                    alert("Error en la conexión con el servidor.");
+                }
+            },
+
+            getTiposDisponiblesFiltro() {
+                const tipos = new Set();
+                this.precios.forEach(p => {
+                    const isAdicional = !!p.es_adicional;
+                    if (this.tabActiva === 'materiales' && !isAdicional) {
+                        tipos.add(p.tipo_trabajo);
+                    } else if (this.tabActiva === 'adicionales' && isAdicional) {
+                        tipos.add(p.tipo_trabajo);
+                    }
+                });
+                return Array.from(tipos).sort();
+            },
+
+            filtrarPrecios() {
+                return this.precios.filter(p => {
+                    const isAdicional = !!p.es_adicional;
+
+                    if (this.tabActiva === 'materiales' && isAdicional) return false;
+                    if (this.tabActiva === 'adicionales' && !isAdicional) return false;
+
+                    const matchesSearch = p.material.toLowerCase().includes(this.search.toLowerCase()) || 
+                                          p.tipo_trabajo.toLowerCase().includes(this.search.toLowerCase());
+                    const matchesTipo = this.filtroTipo === '' || p.tipo_trabajo === this.filtroTipo;
+                    return matchesSearch && matchesTipo;
+                });
+            },
+
+            abrirModalCrear() {
+                this.form = {
+                    id: null,
+                    tipo_trabajo: '',
+                    material: '',
+                    precio_m2: 0.0,
+                    es_adicional: this.tabActiva === 'adicionales'
+                };
+                this.modalAbierto = true;
+            },
+
+            abrirModalEditar(p) {
+                this.form = {
+                    id: p.id,
+                    tipo_trabajo: p.tipo_trabajo,
+                    material: p.material,
+                    precio_m2: p.precio_m2,
+                    es_adicional: !!p.es_adicional
+                };
+                this.modalAbierto = true;
+            },
+
+            async guardarPrecio() {
+                try {
+                    const res = await fetch('/api/precios', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.form)
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        alert('Tarifa guardada con éxito');
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Error en la conexión con el servidor.');
+                }
+            },
+
+            async eliminarPrecio(id) {
+                if (!confirm('¿Estás seguro de que deseas eliminar esta tarifa?')) return;
+                
+                try {
+                    const res = await fetch(`/api/precios/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        alert('Tarifa eliminada con éxito');
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Error en la conexión con el servidor.');
+                }
+            }
+        }));
+    });
+</script>
+{% endblock %}

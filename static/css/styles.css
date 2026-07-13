@@ -1,0 +1,372 @@
+@font-face {
+    font-family: 'Space Age';
+    src: url('/static/img/space_age.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.font-logo {
+    font-family: 'Space Age', 'Inter', sans-serif;
+    letter-spacing: 0.1em;
+}
+
+/* Custom variables mapping for TaskCore Theme System */
+:root {
+    --brand-blue: #00F0FF; /* Cian Eléctrico */
+    --brand-blue-hover: #00b4c4;
+
+    --slate-50: #0B0F19; /* Canvas */
+    --slate-100: #0B0F19;
+    --slate-200: #FFFFFF; /* Title/Text */
+    --slate-300: #21262D; /* Border */
+    --slate-400: #8B949E; /* Muted */
+    --slate-500: #8B949E;
+    --slate-600: #21262D;
+    --slate-700: #21262D;
+    --slate-800: #161B22; /* Surface */
+    --slate-850: #161B22;
+    --slate-900: #0B0F19;
+    --slate-950: #0B0F19;
+    
+    --glass-bg: rgba(22, 27, 34, 0.8);
+    --glass-border: #21262D;
+    --glass-panel-bg: #161B22;
+    --glass-panel-border: #21262D;
+    
+    --bg-gradient-1: rgba(0, 240, 255, 0.08);
+    --bg-gradient-2: rgba(0, 240, 255, 0.04);
+    
+    --scroll-track: #0B0F19;
+    --scroll-thumb: #21262D;
+    --scroll-thumb-hover: #8B949E;
+
+    /* Semantic Task Colors */
+    --sem-success: #3BA934; /* Verde brillante */
+    --sem-warning: #E7C300; /* Amarillo vibrante */
+    --sem-danger: #F92216; /* Rojo neón */
+}
+
+html:not(.dark) {
+    --brand-blue: #0068A7; /* Azul Cobalto */
+    --brand-blue-hover: #005080;
+
+    --slate-50: #F6F8FA; /* Canvas */
+    --slate-100: #F6F8FA;
+    --slate-200: #000000; /* Title/Text */
+    --slate-300: #D0D7DE; /* Border */
+    --slate-400: #57606A; /* Muted */
+    --slate-500: #57606A;
+    --slate-600: #D0D7DE;
+    --slate-700: #D0D7DE;
+    --slate-800: #FFFFFF; /* Surface */
+    --slate-850: #FFFFFF;
+    --slate-900: #F6F8FA;
+    --slate-950: #F6F8FA;
+    
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: #D0D7DE;
+    --glass-panel-bg: #FFFFFF;
+    --glass-panel-border: #D0D7DE;
+    
+    --bg-gradient-1: rgba(0, 104, 167, 0.06);
+    --bg-gradient-2: rgba(0, 104, 167, 0.04);
+    
+    --scroll-track: #F6F8FA;
+    --scroll-thumb: #D0D7DE;
+    --scroll-thumb-hover: #57606A;
+
+    /* Semantic Task Colors */
+    --sem-success: #2EA44F; /* Verde medio */
+    --sem-warning: #D29922; /* Ámbar/Ocre */
+    --sem-danger: #CF222E; /* Rojo sólido */
+}
+
+body {
+    background-color: var(--slate-900);
+    background-image: 
+        radial-gradient(circle at 15% 50%, var(--bg-gradient-1), transparent 25%),
+        radial-gradient(circle at 85% 30%, var(--bg-gradient-2), transparent 25%);
+    background-attachment: fixed;
+    color: var(--slate-200);
+}
+
+.glass {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border) !important;
+}
+
+.glass-panel {
+    background: var(--glass-panel-bg) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-panel-border) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--scroll-track); 
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb); 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scroll-thumb-hover); 
+}
+
+/* Fixes for inputs & selectors in light theme */
+html:not(.dark) input, 
+html:not(.dark) select, 
+html:not(.dark) textarea {
+    color-scheme: light;
+}
+
+/* Premium Inputs, Selects & Textareas styling */
+input, select, textarea {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme Inputs: ensure solid, visible background and borders instead of being transparent */
+html.dark input:not([type="checkbox"]):not([type="radio"]), 
+html.dark select, 
+html.dark textarea {
+    background-color: #1e293b !important; /* Lighter than body background, solid slate-800 */
+    border: 1px solid #475569 !important; /* Lighter border slate-600 */
+    color: #f1f5f9 !important;
+}
+html.dark input:not([type="checkbox"]):not([type="radio"]):focus, 
+html.dark select:focus, 
+html.dark textarea:focus {
+    background-color: #0f172a !important; /* Darker focused background */
+    border-color: var(--brand-blue) !important;
+    box-shadow: 0 0 0 2px rgba(2, 120, 210, 0.3) !important;
+}
+
+/* Light Theme Inputs: solid white with high contrast text and border */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]), 
+html:not(.dark) select, 
+html:not(.dark) textarea {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):focus, 
+html:not(.dark) select:focus, 
+html:not(.dark) textarea:focus {
+    background-color: #ffffff !important;
+    border-color: var(--brand-blue) !important;
+    box-shadow: 0 0 0 2px rgba(2, 120, 210, 0.2) !important;
+}
+
+/* Readonly fields styling in both themes */
+input[readonly] {
+    background-color: rgba(30, 41, 59, 0.4) !important;
+    color: var(--slate-400) !important;
+    cursor: not-allowed;
+}
+html:not(.dark) input[readonly] {
+    background-color: #f1f5f9 !important;
+    color: #64748b !important;
+}
+
+/* Correct contrast issues for text-white elements in light theme */
+html:not(.dark) h1.text-white,
+html:not(.dark) h2.text-white,
+html:not(.dark) h3.text-white,
+html:not(.dark) h4.text-white,
+html:not(.dark) h5.text-white,
+html:not(.dark) h6.text-white,
+html:not(.dark) span.text-white,
+html:not(.dark) p.text-white,
+html:not(.dark) div.text-white,
+html:not(.dark) .text-white:not(button):not(a):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-red-"]):not(.bg-gradient-to-r) {
+    color: var(--slate-100) !important;
+}
+
+/* Ensure white text inside buttons or badges stays white */
+html:not(.dark) .bg-blue-600,
+html:not(.dark) .bg-blue-500,
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-emerald-500,
+html:not(.dark) .bg-red-600,
+html:not(.dark) .bg-red-500,
+html:not(.dark) [class*="bg-blue-"] *,
+html:not(.dark) [class*="bg-emerald-"] *,
+html:not(.dark) [class*="bg-red-"] *,
+html:not(.dark) .bg-gradient-to-r,
+html:not(.dark) .bg-gradient-to-r * {
+    color: #ffffff !important;
+}
+
+/* Sidebar hover state contrast fixes in light theme */
+html:not(.dark) aside a:hover,
+html:not(.dark) aside a:hover *,
+html:not(.dark) aside button:hover,
+html:not(.dark) aside button:hover * {
+    color: var(--brand-blue) !important;
+}
+
+/* Soft shadows for depth in light mode to prevent washed-out flat look */
+html:not(.dark) .glass-panel {
+    box-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Light Theme: Fixes for faded buttons, labels, and text colors */
+html:not(.dark) button.bg-violet-600\/20 {
+    background-color: #7c3aed !important; /* Solid violet */
+    color: #ffffff !important;
+    border-color: #6d28d9 !important;
+}
+html:not(.dark) button.bg-violet-600\/20:hover {
+    background-color: #6d28d9 !important;
+}
+html:not(.dark) button.bg-violet-600\/20 * {
+    color: #ffffff !important;
+}
+
+html:not(.dark) button.text-blue-400 {
+    background-color: var(--brand-blue) !important; /* Solid blue */
+    color: #ffffff !important;
+    border-color: var(--brand-blue-hover) !important;
+}
+html:not(.dark) button.text-blue-400:hover {
+    background-color: var(--brand-blue-hover) !important;
+}
+html:not(.dark) button.text-blue-400 * {
+    color: #ffffff !important;
+}
+
+/* Fix "Guardar como Borrador" button contrast in light mode */
+html:not(.dark) .bg-slate-800 {
+    background-color: #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+html:not(.dark) .bg-slate-800:hover {
+    background-color: #cbd5e1 !important;
+}
+html:not(.dark) .text-slate-300 {
+    color: #0f172a !important;
+}
+
+/* Override low-contrast Tailwind text classes in Light Theme */
+html:not(.dark) .text-emerald-400 {
+    color: #047857 !important; /* Dark emerald */
+}
+html:not(.dark) .text-amber-400,
+html:not(.dark) .text-amber-300 {
+    color: #b45309 !important; /* Dark amber */
+}
+html:not(.dark) .text-violet-400 {
+    color: #6d28d9 !important; /* Dark violet */
+}
+html:not(.dark) .bg-amber-950\/10 {
+    background-color: #fef3c7 !important;
+    border: 1px solid #f59e0b !important;
+}
+html:not(.dark) .bg-emerald-500\/10,
+html:not(.dark) .bg-emerald-950\/10 {
+    background-color: #d1fae5 !important;
+    border: 1px solid #10b981 !important;
+}
+
+/* Sidebar Icons Unification */
+aside nav a svg {
+    color: #94a3b8 !important; /* Slate-400 unified base color */
+    transition: color 0.2s ease-in-out;
+}
+aside nav a:hover svg,
+aside nav a.active svg {
+    color: var(--brand-blue) !important; /* Unified blue on hover */
+}
+html.dark aside nav a:hover svg,
+html.dark aside nav a.active svg {
+    color: #3da2f5 !important; /* Unified brighter blue on hover in dark mode */
+}
+
+/* Collapsible Sidebar Layout */
+aside {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.sidebar-collapsed aside {
+    width: 4.5rem !important; /* Collapse from w-64 (16rem) to w-18 (4.5rem) */
+}
+body.sidebar-collapsed aside .font-logo,
+body.sidebar-collapsed aside nav a span,
+body.sidebar-collapsed aside nav p,
+body.sidebar-collapsed aside nav div,
+body.sidebar-collapsed aside .p-4 p,
+body.sidebar-collapsed aside .p-4 button span,
+body.sidebar-collapsed aside .logo-container span {
+    display: none !important;
+}
+body.sidebar-collapsed aside nav a {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+body.sidebar-collapsed aside nav a svg {
+    margin-right: 0 !important;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+body.sidebar-collapsed aside .h-16 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    justify-content: center;
+}
+body.sidebar-collapsed aside .logo-container {
+    display: none !important; /* Hide logo completely */
+}
+body.sidebar-collapsed aside .p-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+body.sidebar-collapsed aside button[onclick="logout()"] {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+body.sidebar-collapsed aside button[onclick="logout()"] svg {
+    margin-right: 0 !important;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+body.sidebar-collapsed aside .sidebar-controls {
+    flex-direction: column; /* Stack controls vertically when collapsed */
+    gap: 0.5rem;
+}
+
+/* Helper styles for using theme-aware semantic colors */
+.bg-semantic-success {
+    background-color: var(--sem-success) !important;
+}
+.bg-semantic-warning {
+    background-color: var(--sem-warning) !important;
+}
+.bg-semantic-danger {
+    background-color: var(--sem-danger) !important;
+}
+.text-semantic-success {
+    color: var(--sem-success) !important;
+}
+.text-semantic-warning {
+    color: var(--sem-warning) !important;
+}
+.text-semantic-danger {
+    color: var(--sem-danger) !important;
+}
+.border-semantic-success {
+    border-color: var(--sem-success) !important;
+}
+.border-semantic-warning {
+    border-color: var(--sem-warning) !important;
+}
+.border-semantic-danger {
+    border-color: var(--sem-danger) !important;
+}

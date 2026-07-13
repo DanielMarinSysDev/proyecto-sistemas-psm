@@ -1,0 +1,30 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\taskcore]
+@="URL:TaskCore Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\taskcore\shell]
+
+[HKEY_CLASSES_ROOT\taskcore\shell\open]
+
+[HKEY_CLASSES_ROOT\taskcore\shell\open\command]
+@="powershell.exe -WindowStyle Minimized -Command \"$log = 'C:\\Users\\Public\\taskcore_debug.txt'; \\\"--- Start Debug ---\\\" | Out-File $log; try { $url = [System.Uri]::UnescapeDataString('%1'); \\\"Raw URL: $url\\\" | Out-File $log -Append; $cleanUrl = $url.Replace('taskcore://', '').Trim('/'); \\\"Clean URL: $cleanUrl\\\" | Out-File $log -Append; $parts = $cleanUrl -split '\\?server='; $b64 = $parts[0].TrimEnd('/'); \\\"B64: $b64\\\" | Out-File $log -Append; $server = if ($parts.Length -gt 1) { $parts[1] } else { 'localhost' }; \\\"Server: $server\\\" | Out-File $log -Append; try { $ips = [System.Net.Dns]::GetHostAddresses($server) | Where-Object { $_.AddressFamily -eq 'InterNetwork' }; $resolved = $ips[0].ToString() } catch { $resolved = $server }; if ([string]::IsNullOrEmpty($resolved)) { $resolved = '127.0.0.1' }; \\\"Resolved: $resolved\\\" | Out-File $log -Append; $localIPs = [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) | ForEach-Object { $_.ToString() }; $localIPs += @('127.0.0.1', '::1', 'localhost'); $bytes = [System.Convert]::FromBase64String($b64); $path = [System.Text.Encoding]::UTF8.GetString($bytes); $path = $path.Replace('/', '\\\\'); \\\"Decoded Path: $path\\\" | Out-File $log -Append; if (-not ($localIPs -contains $resolved)) { $path = $path -replace '^.*\\\\(TaskCore_Archivos_Test|TaskCore_Archivos)', ('\\\\' + $resolved + '\\$1') }; \\\"Final Path: $path\\\" | Out-File $log -Append; Start-Process $path; \\\"Success!\\\" | Out-File $log -Append } catch { \\\"ERROR: $_\\\" | Out-File $log -Append }\""
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome]
+"AutoLaunchProtocolsFromOrigins"="[{\"allowed_origins\":[\"*\"],\"protocol\":\"taskcore\"}]"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge]
+"AutoLaunchProtocolsFromOrigins"="[{\"allowed_origins\":[\"*\"],\"protocol\":\"taskcore\"}]"
+
+[HKEY_CURRENT_USER\SOFTWARE\Policies\Google\Chrome]
+"AutoLaunchProtocolsFromOrigins"="[{\"allowed_origins\":[\"*\"],\"protocol\":\"taskcore\"}]"
+
+[HKEY_CURRENT_USER\SOFTWARE\Policies\Microsoft\Edge]
+"AutoLaunchProtocolsFromOrigins"="[{\"allowed_origins\":[\"*\"],\"protocol\":\"taskcore\"}]"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Opera]
+"AutoLaunchProtocolsFromOrigins"="[{\"allowed_origins\":[\"*\"],\"protocol\":\"taskcore\"}]"
+
+[HKEY_CURRENT_USER\SOFTWARE\Policies\Opera]
+"AutoLaunchProtocolsFromOrigins"="[{\"allowed_origins\":[\"*\"],\"protocol\":\"taskcore\"}]"

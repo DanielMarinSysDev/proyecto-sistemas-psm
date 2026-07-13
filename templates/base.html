@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TaskCore - Control de Órdenes y Producción{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/Logo Azul.svg">
+    <!-- Prevent theme flash -->
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS (CDN for rapid prototyping) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        blue: {
+                            400: '#3da2f5',
+                            500: '#0278D2', /* Brand color `#0278D2` */
+                            600: '#025fa6',
+                            700: '#014980',
+                        },
+                        violet: {
+                            400: '#3da2f5', 
+                            500: '#0278D2',
+                            600: '#025fa6',
+                        },
+                        slate: {
+                            50: 'var(--slate-50)',
+                            100: 'var(--slate-100)',
+                            200: 'var(--slate-200)',
+                            300: 'var(--slate-300)',
+                            400: 'var(--slate-400)',
+                            500: 'var(--slate-500)',
+                            600: 'var(--slate-600)',
+                            700: 'var(--slate-700)',
+                            800: 'var(--slate-800)',
+                            850: 'var(--slate-850)',
+                            900: 'var(--slate-900)',
+                            950: 'var(--slate-950)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Custom stylesheet for theme styles -->
+    <link class="theme-stylesheet" rel="stylesheet" href="/static/css/styles.css?v=1.0.3">
+    <link rel="manifest" href="/static/manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                .then(reg => {
+                    console.log('Service Worker registrado exitosamente en el ámbito:', reg.scope);
+                })
+                .catch(err => {
+                    console.error('Error al registrar Service Worker:', err);
+                });
+            });
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="text-slate-200 antialiased h-screen flex overflow-hidden" x-data="{ mobileMenuOpen: false }">
+    <script>
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    </script>
+
+    <!-- Mobile Navigation Drawer Overlay -->
+    <div x-show="mobileMenuOpen" 
+         @click="mobileMenuOpen = false" 
+         x-transition:opacity
+         class="fixed inset-0 bg-black/60 z-40 md:hidden" 
+         style="display: none;">
+    </div>
+
+    <!-- Sidebar -->
+    <aside :class="mobileMenuOpen ? 'flex fixed inset-y-0 left-0 w-64 shadow-2xl z-50' : 'hidden md:flex'"
+           class="w-64 glass-panel border-r border-slate-800 flex flex-col z-20">
+        <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800 shrink-0">
+            <div class="flex items-center logo-container">
+                <div class="w-8 h-8 flex items-center justify-center mr-3 text-blue-500">
+                    <svg class="w-full h-full" viewBox="0 0 478 549.31" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M473.75,134.22l-93.08-53.74-8.5,14.72,88.83,51.29v102.58h17v-107.48c0-3.04-1.62-5.84-4.25-7.36Z"/>
+                        <path d="M461,402.83l-88.83,51.29,8.5,14.72,93.08-53.74c2.63-1.52,4.25-4.32,4.25-7.36v-107.48h-17v102.58Z"/>
+                        <path d="M239,531l-88.83-51.29-8.5,14.72,93.08,53.74c1.32.76,2.78,1.14,4.25,1.14s2.93-.38,4.25-1.14l93.08-53.74-8.5-14.72-88.83,51.29Z"/>
+                        <path d="M17,300.25H0v107.48c0,3.04,1.62,5.84,4.25,7.36l93.08,53.74,8.5-14.72-88.83-51.29v-102.58Z"/>
+                        <path d="M17,146.48l88.83-51.29-8.5-14.72L4.25,134.22c-2.63,1.52-4.25,4.32-4.25,7.36v107.48h17v-102.58Z"/>
+                        <path d="M239,18.31l88.83,51.29,8.5-14.72L243.25,1.14c-2.63-1.52-5.87-1.52-8.5,0l-93.08,53.74,8.5,14.72,88.83-51.29Z"/>
+                        <path d="M418.19,378.11c10.96-18.98,4.43-43.34-14.55-54.3-9.2-5.31-19.91-6.72-30.16-3.97-7.46,2-14.02,6.03-19.09,11.62l-49.72-28.71v-56.18l49.72-28.71c5.07,5.59,11.63,9.62,19.09,11.62,3.42.92,6.9,1.37,10.35,1.37,6.89,0,13.69-1.81,19.81-5.34,9.2-5.31,15.77-13.88,18.52-24.14,2.75-10.26,1.34-20.97-3.97-30.16-10.96-18.98-35.32-25.51-54.3-14.55-9.2,5.31-15.77,13.88-18.52,24.14-2,7.46-1.79,15.16.52,22.34l-49.72,28.71-48.66-28.09v-57.43c17.85-3.9,31.25-19.83,31.25-38.83,0-21.92-17.83-39.75-39.75-39.75s-39.75,17.83-39.75,39.75c0,19,13.4,34.92,31.25,38.83v57.43l-48.66,28.09-49.73-28.71c2.3-7.18,2.51-14.88.51-22.34-2.75-10.26-9.33-18.83-18.52-24.14s-19.91-6.72-30.16-3.97c-10.26,2.75-18.83,9.33-24.14,18.52s-6.72,19.91-3.97,30.16c2.75,10.26,9.33,18.83,18.52,24.14,6.12,3.54,12.92,5.34,19.81,5.34,3.45,0,6.93-.45,10.35-1.37,7.46-2,14.02-6.03,19.09-11.62l49.72,28.71v56.18l-49.72,28.71c-5.07-5.59-11.63-9.62-19.09-11.62-10.26-2.75-20.97-1.34-30.16,3.97-18.98,10.96-25.51,35.32-14.55,54.3,5.31,9.2,13.88,15.77,24.14,18.52,3.42.92,6.9,1.37,10.35,1.37,6.89,0,13.69-1.81,19.81-5.34,9.2-5.31,15.77-13.88,18.52-24.14,2-7.46,1.79-15.16-.51-22.34l49.72-28.71,48.66,28.09v57.43c-17.85,3.9-31.25,19.83-31.25,38.83,0,21.92,17.83,39.75,39.75,39.75s39.75-17.83,39.75-39.75c0-19-13.4-34.92-31.25-38.83v-57.43l48.66-28.09,49.72,28.71c-2.3,7.18-2.51,14.88-.52,22.34,2.75,10.26,9.33,18.83,18.52,24.14,6.25,3.61,13.07,5.32,19.81,5.32,13.75,0,27.14-7.13,34.49-19.87ZM372.39,171.37c3.57-2.06,7.48-3.04,11.34-3.04,7.87,0,15.53,4.08,19.74,11.37,3.04,5.26,3.85,11.39,2.27,17.26-1.57,5.87-5.34,10.78-10.6,13.81-5.26,3.04-11.39,3.84-17.26,2.27-5.87-1.57-10.78-5.34-13.81-10.6-6.27-10.86-2.54-24.81,8.33-31.08ZM216.25,107.5c0-12.55,10.21-22.75,22.75-22.75s22.75,10.21,22.75,22.75-10.21,22.75-22.75,22.75-22.75-10.21-22.75-22.75ZM100.12,213.05c-5.87,1.57-12,.77-17.26-2.27-5.26-3.04-9.03-7.94-10.6-13.81-1.57-5.87-.77-12,2.27-17.26,3.04-5.26,7.94-9.03,13.81-10.6,1.96-.52,3.95-.78,5.93-.78,3.94,0,7.83,1.03,11.34,3.06,5.26,3.04,9.03,7.94,10.6,13.81,1.57,5.87.77,12-2.27,17.26-3.04,5.26-7.94,9.03-13.81,10.6ZM116.21,364.12c-1.57,5.87-5.34,10.78-10.6,13.81-5.26,3.04-11.39,3.84-17.26,2.27-5.87-1.57-10.78-5.34-13.81-10.6-6.27-10.87-2.54-24.81,8.33-31.08,3.51-2.02,7.4-3.06,11.34-3.06,1.98,0,3.97.26,5.93.78,5.87,1.57,10.78,5.34,13.81,10.6,3.04,5.26,3.85,11.39,2.27,17.26ZM261.75,441.81c0,12.55-10.21,22.75-22.75,22.75s-22.75-10.21-22.75-22.75,10.21-22.75,22.75-22.75,22.75,10.21,22.75,22.75ZM287.66,302.75l-48.66,28.09-48.66-28.09v-56.18l48.66-28.09,48.66,28.09v56.18ZM364.06,346.86c3.04-5.26,7.94-9.03,13.81-10.6,5.87-1.57,12-.77,17.26,2.27,10.87,6.27,14.6,20.21,8.33,31.08-6.27,10.86-20.21,14.6-31.08,8.33-10.86-6.27-14.6-20.21-8.33-31.08Z"/>
+                    </svg>
+                </div>
+                <span class="text-xl font-logo tracking-wider text-white">TaskCore</span>
+            </div>
+            
+            <div class="flex items-center gap-1 sidebar-controls">
+                <!-- Sidebar Toggle Button (Desktop) -->
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/50 transition-colors hidden md:block" title="Contraer/Expandir Menú">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+               <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+            <a href="/dashboard" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="/ayuda" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <span>Guía de Uso</span>
+            </a>
+            
+            <!-- RBAC: Solo Admin y Ventas ven Recepción -->
+            {% if session.get('usuario_rol') in ['Administrador', 'Ventas / Recepción'] %}
+            <div class="pt-4 pb-2 px-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Módulos</p>
+            </div>
+            
+            <a href="/recepcion/nueva-orden" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>Recepción / Ventas</span>
+            </a>
+            <a href="/recepcion/borradores" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span>Borradores de Órdenes</span>
+            </a>
+            <a href="/clientes" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span>Directorio Clientes</span>
+            </a>
+            {% endif %}
+            
+            <!-- RBAC: Solo Admin y Gerencia ven Finanzas -->
+            {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+            <div class="pt-4 pb-2 px-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Finanzas</p>
+            </div>
+            
+            <a href="/finanzas/cuentas-por-cobrar" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-emerald-500 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Cuentas por Cobrar</span>
+            </a>
+            
+            <a href="/finanzas/reportes" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-violet-500 group-hover:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <span>Métricas e Historial</span>
+            </a>
+            {% endif %}
+ 
+            <!-- RBAC: Admin y Gerencia pueden ver ciertos módulos de Sistema -->
+            {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+            <div class="pt-4 pb-2 px-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sistema</p>
+            </div>
+            {% endif %}
+            
+            {% if session.get('usuario_rol') == 'Administrador' %}
+            <a href="/usuarios" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <span>Gestión de Usuarios</span>
+            </a>
+            <a href="/auditoria" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <span>Auditoría de Logs</span>
+            </a>
+            {% endif %}
+
+            {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+            <a href="/precios" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M6 20h.01M21 8l-8.586 8.586a2 2 0 01-2.828 0L3 10.586a2 2 0 010-2.828L11.586 2a2 2 0 012.828 0L21 8z"></path></svg>
+                <span>Gestión de Tarifas</span>
+            </a>
+            {% endif %}
+
+            {% if session.get('usuario_rol') == 'Administrador' %}
+            <a href="/admin/mantenimiento" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                <span>Mantenimiento BD</span>
+            </a>
+            <a href="#" onclick="actualizarSistema(event)" class="flex items-center px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 group transition-all">
+                <svg class="w-5 h-5 mr-3 text-slate-400 group-hover:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4"></path></svg>
+                <span>Actualizar Sistema</span>
+            </a>
+            {% endif %}
+        </nav>
+        
+        <div class="p-4 border-t border-slate-800">
+            <!-- User info -->
+            <div class="mb-4 px-2">
+                <p class="text-sm font-medium text-slate-300">{{ session.get('usuario_nombre', 'Usuario') }}</p>
+                <p class="text-xs text-slate-500">{{ session.get('usuario_rol', '') }}</p>
+            </div>
+            <button onclick="logout()" class="flex items-center w-full px-3 py-2.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative z-10" x-data="globalSearch()">
+        <!-- Top header for mobile (hidden on md) -->
+        <header class="h-16 glass-panel border-b border-slate-800 flex items-center justify-between px-4 md:hidden">
+            <div class="flex items-center">
+                <!-- Inline SVG G Logo -->
+                <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center mr-3 shadow-md shadow-blue-500/20 text-white p-1">
+                    <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                    </svg>
+                </div>
+                <span class="text-xl font-logo tracking-wider text-white">TaskCore</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Theme Toggle Button (Mobile) -->
+                <button onclick="toggleTheme()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/50 transition-colors" title="Cambiar tema">
+                    <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z"></path>
+                    </svg>
+                    <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+                <button @click="mobileMenuOpen = true" class="text-slate-300 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Search Bar (Desktop) -->
+        <div class="hidden md:flex h-16 glass-panel border-b border-slate-800 items-center justify-between px-8 sticky top-0 z-20">
+            <div class="relative w-full max-w-2xl">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input x-model="query" @input.debounce.300ms="search" type="text" class="block w-full pl-10 pr-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" placeholder="Buscar por ID, Cliente o Nombre de Proyecto...">
+                
+                <!-- Search Results Dropdown -->
+                <div x-show="results.length > 0 || isSearching" @click.away="clear" x-transition class="absolute top-full left-0 mt-2 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden" style="display: none;">
+                    <div x-show="isSearching" class="p-4 text-center text-slate-400 text-sm">Buscando...</div>
+                    <ul class="max-h-80 overflow-y-auto custom-scrollbar">
+                        <template x-for="r in results" :key="r.id">
+                            <li class="border-b border-slate-700/50 hover:bg-slate-700 transition-colors">
+                                <div class="p-3 flex justify-between items-center cursor-pointer" @click="alert('Ruta local: ' + r.ruta)">
+                                    <div>
+                                        <div class="flex items-center text-slate-200">
+                                            <span class="text-xs font-mono bg-blue-900/50 text-blue-300 px-1.5 py-0.5 rounded mr-2" x-text="r.referencia"></span>
+                                            <span class="font-medium" x-text="r.nombre_proyecto"></span>
+                                        </div>
+                                        <div class="text-xs text-slate-400 mt-1 flex items-center">
+                                            <span x-text="r.cliente"></span> &bull; <span class="ml-1" x-text="r.estado"></span> &bull; <span class="ml-1" x-text="r.fecha"></span>
+                                        </div>
+                                    </div>
+                                    <button class="text-blue-400 hover:text-blue-300 p-1 bg-blue-900/20 rounded">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                    </button>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Theme Toggle Button (Desktop, Far Right) -->
+            <div class="flex items-center ml-4">
+                <button onclick="toggleTheme()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800/50 transition-colors" title="Cambiar tema">
+                    <!-- Sun Icon (visible in dark mode) -->
+                    <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z"></path>
+                    </svg>
+                    <!-- Moon Icon (visible in light mode) -->
+                    <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main View Area -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 flex flex-col justify-between">
+            <div class="flex-1">
+                {% block content %}{% endblock %}
+            </div>
+            <footer class="mt-8 pt-4 border-t border-slate-800/30 text-center text-[10px] text-slate-500 font-sans tracking-wide">
+                &copy; 2026 TaskCore. Todos los derechos reservados.
+            </footer>
+        </main>
+    </div>
+
+    <!-- Global Scripts -->
+    <script>
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function toggleSidebar() {
+            if (document.body.classList.contains('sidebar-collapsed')) {
+                document.body.classList.remove('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', 'false');
+            } else {
+                document.body.classList.add('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', 'true');
+            }
+        }
+
+        function logout() {
+            fetch('/api/logout', { method: 'POST' })
+            .then(() => window.location.href = '/login');
+        }
+
+        async function actualizarSistema(e) {
+            e.preventDefault();
+            if (!confirm("¿Estás seguro de que deseas actualizar el sistema desde Git? Esto descargará la última versión y reiniciará los servidores automáticamente.")) {
+                return;
+            }
+            
+            const btn = e.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 mr-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Actualizando...
+            `;
+            btn.style.pointerEvents = 'none';
+            
+            try {
+                const res = await fetch('/api/admin/system/update', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert("Sistema actualizado exitosamente. El servidor se está reiniciando en segundo plano con la nueva versión. Recarga la página en 5 segundos.");
+                    window.location.reload();
+                } else {
+                    alert("Error al actualizar: " + (data.error || "Error desconocido"));
+                    btn.innerHTML = originalHTML;
+                    btn.style.pointerEvents = 'auto';
+                }
+            } catch (err) {
+                // Fetch might fail because the server restarts immediately when files change
+                alert("El servidor se está reiniciando con la nueva versión. Recarga la página en unos segundos.");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 4000);
+            }
+        }
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('globalSearch', () => ({
+                query: '',
+                results: [],
+                isSearching: false,
+                
+                async search() {
+                    if (this.query.length < 2) {
+                        this.results = [];
+                        return;
+                    }
+                    this.isSearching = true;
+                    try {
+                        const res = await fetch(`/api/buscar?q=${encodeURIComponent(this.query)}`);
+                        if(res.ok) {
+                            this.results = await res.json();
+                        }
+                    } catch(e) {
+                        console.error(e);
+                    } finally {
+                        this.isSearching = false;
+                    }
+                },
+                
+                clear() {
+                    this.query = '';
+                    this.results = [];
+                }
+            }));
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,46 @@
+# Entorno Virtual y Caché
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Base de datos local
+sistema_gestion_produccion.db
+sistema_gestion_produccion_BACKUP.db
+
+# Configuración y Secretos
+.env
+
+# Directorios de producción / temporales de test
+D:/Grafik_Archivos_Test/
+D:/TaskCore_Archivos_Test/
+TaskCore_Archivos_Test/
+*.log
+*.tmp
+
+# OpenWA Gateway
+OpenWA/node_modules/
+OpenWA/dist/
+OpenWA/data/
+OpenWA/.env
+
+# Chrome binaries
+chrome/
+
+# Docker y archivos locales de prueba
+db_data/
+Grafik_Archivos/
+TaskCore_Archivos/
+
+# Respaldos de base de datos
+respaldos/
+
+# Licencia local de desarrollo y generador
+licencia.key
+generar_licencia.py
+
+# Archivos de prueba y depuración locales
+test.db
+webhook_payload.json

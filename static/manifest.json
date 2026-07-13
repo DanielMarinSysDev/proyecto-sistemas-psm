@@ -1,0 +1,29 @@
+{
+  "short_name": "Grafi-k",
+  "name": "Sistema Grafi-k",
+  "icons": [
+    {
+      "src": "/static/img/Logo Azul.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/dashboard",
+  "background_color": "#0f172a",
+  "theme_color": "#0278d2",
+  "display": "standalone",
+  "orientation": "any"
+}

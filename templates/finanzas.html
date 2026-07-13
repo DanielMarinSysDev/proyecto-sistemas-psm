@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Cuentas por Cobrar - TaskCore{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto" x-data="finanzasModule" x-init="initModule()">
+    
+    <div class="mb-8 border-b border-slate-700/50 pb-5">
+        <h1 class="text-3xl font-bold text-slate-100 flex items-center">
+            <svg class="w-8 h-8 mr-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Cuentas por Cobrar
+        </h1>
+        <p class="mt-2 text-sm text-slate-400">Gestión de deudores, abonos y liquidación de facturas pendientes.</p>
+    </div>
+
+    {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+    <!-- Configuración de Recordatorio de Deudas -->
+    <div class="glass p-4 rounded-xl flex flex-col sm:flex-row gap-4 items-center justify-between border border-slate-800 mb-6 bg-slate-800/40 shadow-xl backdrop-blur-sm">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-emerald-600/20 text-emerald-400 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-white">Intervalo de Recordatorio de Deudas</h3>
+                <p class="text-xs text-slate-400">Determina cada cuántos días se enviará de forma automática el recordatorio de saldo pendiente a los clientes.</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <select x-model="intervaloRecordatorio" @change="guardarIntervalo()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition-all w-full sm:w-64">
+                <option value="1">Diario (Cada 1 día)</option>
+                <option value="2">Cada 2 días</option>
+                <option value="3">Cada 3 días</option>
+                <option value="5">Cada 5 días</option>
+                <option value="7">Semanal (Cada 7 días)</option>
+                <option value="15">Quincenal (Cada 15 días)</option>
+            </select>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Layout Dividido Expandible -->
+    <div class="flex flex-col lg:flex-row gap-6">
+        
+        <!-- Panel Izquierdo: Lista de Deudores -->
+        <div class="transition-all duration-500 ease-in-out flex-shrink-0"
+             :class="activeClient ? 'lg:w-1/3' : 'w-full'">
+            
+            <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden shadow-xl shadow-black/20 backdrop-blur-sm">
+                <div class="p-4 border-b border-slate-700/50 bg-slate-800/80 flex justify-between items-center">
+                    <h2 class="text-lg font-medium text-slate-200">Directorio de Deudores</h2>
+                    <span class="bg-amber-500/20 text-amber-400 py-1 px-3 rounded-full text-xs font-bold" x-text="deudores.length + ' Clientes'"></span>
+                </div>
+                
+                <div class="p-4">
+                    <div class="relative mb-4">
+                        <input type="text" x-model="searchQuery" placeholder="Buscar cliente..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+                        <svg class="w-5 h-5 absolute left-3 top-2.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+
+                    <div class="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar pr-1">
+                        <template x-if="loadingDeudores">
+                            <div class="text-center py-8 text-slate-500">Cargando deudores...</div>
+                        </template>
+                        
+                        <template x-if="!loadingDeudores && filteredDeudores.length === 0">
+                            <div class="text-center py-8 text-slate-500">No hay deudores pendientes. ¡Excelente!</div>
+                        </template>
+                        
+                        <template x-for="cliente in filteredDeudores" :key="cliente.id">
+                            <div @click="seleccionarCliente(cliente)" 
+                                 class="p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:bg-slate-700/50"
+                                 :class="activeClient && activeClient.id === cliente.id ? 'bg-slate-700/80 border-emerald-500/50 shadow-md' : 'bg-slate-900/50 border-slate-700'">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-medium text-slate-200" x-text="cliente.nombre_empresa"></h3>
+                                    <span class="text-xs bg-slate-800 border border-slate-600 text-slate-300 px-2 py-0.5 rounded" x-text="cliente.cantidad_pedidos + ' ped.'"></span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <div class="text-xs text-slate-400" x-text="cliente.contacto_nombre"></div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-amber-400" x-text="cliente.total_usd === null || isNaN(parseFloat(cliente.total_usd)) ? '[RESERVADO]' : '$ ' + parseFloat(cliente.total_usd).toLocaleString('es-VE', {minimumFractionDigits:2})"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Detalle del Cliente y Pagos -->
+        <div class="transition-all duration-500 ease-in-out"
+             x-show="activeClient"
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="opacity-0 translate-x-8"
+             x-transition:enter-end="opacity-100 translate-x-0"
+             :class="activeClient ? 'lg:w-2/3 flex-1 block' : 'hidden'">
+            
+            <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden shadow-xl shadow-black/20 backdrop-blur-sm h-full flex flex-col">
+                <div class="p-5 border-b border-slate-700/50 bg-slate-800/80 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-slate-100 flex items-center">
+                            <span x-text="activeClient ? activeClient.nombre_empresa : ''"></span>
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">Selecciona los pedidos que deseas liquidar</p>
+                    </div>
+                    <button @click="activeClient = null" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="p-5 flex-1 overflow-y-auto">
+                    <template x-if="loadingPedidos">
+                        <div class="text-center py-10 text-slate-500">Cargando facturas...</div>
+                    </template>
+                    
+                    <template x-if="!loadingPedidos && pedidosActivos.length > 0">
+                        <div class="space-y-4">
+                            <template x-for="pedido in pedidosActivos" :key="pedido.id">
+                                <div class="flex items-start p-4 bg-slate-900/60 border border-slate-700 rounded-lg hover:bg-slate-800/80 transition-colors" :class="pedidosSeleccionados.includes(pedido.id) ? 'border-emerald-500 bg-emerald-900/10' : ''">
+                                    <div class="flex-shrink-0 mt-1 mr-4">
+                                        <input type="checkbox" :value="pedido.id" x-model="pedidosSeleccionados" class="w-5 h-5 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900">
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-mono text-emerald-400 font-bold text-lg" x-text="pedido.referencia"></h4>
+                                                <div class="text-xs text-slate-400 mt-1" x-text="'Fecha: ' + pedido.fecha"></div>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="px-2 py-1 text-xs rounded-full font-medium" :class="pedido.estado_pago === 'Abono' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'" x-text="pedido.estado_pago"></span>
+                                                <button @click.prevent="abrirModalAbono(pedido)" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded transition-colors">
+                                                    Registrar Abono
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-start">
+                                            <div class="space-y-1">
+                                                <span class="text-xs text-slate-500 block">Detalles de Abonos:</span>
+                                                <span class="text-xs text-slate-400 block max-w-xs leading-relaxed" x-text="pedido.monto_abono || 'Ninguno'"></span>
+                                            </div>
+                                            <div class="text-right space-y-1">
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Monto Total Original:</span>
+                                                    <span class="text-sm font-semibold text-slate-400" x-text="pedido.monto_total === null || isNaN(parseFloat(pedido.monto_total)) ? '[RESERVADO]' : (pedido.moneda === 'USD' ? '$ ' : 'Bs. ') + parseFloat(pedido.monto_total).toLocaleString('es-VE', {minimumFractionDigits:2})"></span>
+                                                </div>
+                                                <div class="pt-1 border-t border-slate-800">
+                                                    <span class="text-[10px] text-amber-500 uppercase tracking-wider block font-bold">Monto Restante:</span>
+                                                    <span class="text-lg font-bold text-amber-400" x-text="pedido.resta_por_pagar === null || isNaN(parseFloat(pedido.resta_por_pagar)) ? '[RESERVADO]' : (pedido.moneda === 'USD' ? '$ ' : 'Bs. ') + parseFloat(pedido.resta_por_pagar).toLocaleString('es-VE', {minimumFractionDigits:2})"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                
+                <div class="p-5 bg-slate-900/80 border-t border-slate-700 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="w-full">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Método de Pago *</label>
+                            <select x-model="metodoPagoLiquidar" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+                                <option value="">-- Seleccionar --</option>
+                                <option value="Pago Móvil">Pago Móvil</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Efectivo Bs">Efectivo Bs</option>
+                                <option value="Efectivo $">Efectivo $</option>
+                                <option value="Zelle">Zelle</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="w-full">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Referencia / Notas</label>
+                            <input type="text" x-model="detallesPago" placeholder="Ej: Zelle Ref 1234" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button @click="procesarPago()" :disabled="pedidosSeleccionados.length === 0 || !metodoPagoLiquidar || procesandoPago" class="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span x-show="!procesandoPago" x-text="'Liquidar ' + pedidosSeleccionados.length + ' Pedido(s)'"></span>
+                            <span x-show="procesandoPago" style="display: none;">Procesando...</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Notificaciones de pago -->
+                <div x-show="pagoMsg" x-transition class="p-3 text-sm text-center font-medium" :class="pagoError ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'" style="display:none;">
+                    <span x-text="pagoMsg"></span>
+                </div>
+                
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- MODAL REGISTRAR ABONO -->
+    <div x-show="modalAbono" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" x-cloak>
+        <div class="bg-slate-800 border border-slate-700 max-w-md w-full rounded-2xl overflow-hidden shadow-2xl" @click.away="modalAbono = false">
+            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/80">
+                <h3 class="text-lg font-bold text-slate-200 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Registrar Abono
+                </h3>
+                <button @click="modalAbono = false" class="text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                    <div class="text-xs text-slate-400">Pedido Referencia:</div>
+                    <div class="font-mono font-bold text-emerald-400 text-lg" x-text="pedidoAbono ? pedidoAbono.referencia : ''"></div>
+                    <div class="mt-2 flex justify-between text-sm">
+                        <span class="text-slate-400">Total Original:</span>
+                        <span class="text-slate-200 font-bold" x-text="pedidoAbono ? (pedidoAbono.moneda === 'USD' ? '$ ' : 'Bs. ') + parseFloat(pedidoAbono.monto_total).toLocaleString('es-VE', {minimumFractionDigits:2}) : ''"></span>
+                    </div>
+                    <div class="flex justify-between text-sm mt-1">
+                        <span class="text-slate-400">Abonos Previos:</span>
+                        <span class="text-slate-200" x-text="pedidoAbono ? (pedidoAbono.monto_abono || 'Ninguno') : ''"></span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Monto del Nuevo Abono ($)</label>
+                    <input type="number" step="0.01" x-model="abonoForm.monto" placeholder="Ej: 50.00" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Método de Pago *</label>
+                        <select x-model="abonoForm.metodo_pago" required class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+                            <option value="">-- Seleccionar --</option>
+                            <option value="Pago Móvil">Pago Móvil</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Efectivo Bs">Efectivo Bs</option>
+                            <option value="Efectivo $">Efectivo $</option>
+                            <option value="Zelle">Zelle</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Referencia / Notas</label>
+                        <input type="text" x-model="abonoForm.detalles" placeholder="Ej: Ref 9876" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 border-t border-slate-700 bg-slate-900/80 flex justify-end space-x-2">
+                <button @click="modalAbono = false" class="px-4 py-2 border border-slate-700 text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors">
+                    Cancelar
+                </button>
+                <button @click="guardarAbono()" :disabled="!abonoForm.monto || procesandoAbono" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+                    <svg x-show="procesandoAbono" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Confirmar Abono
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('finanzasModule', () => ({
+            deudores: [],
+            searchQuery: '',
+            loadingDeudores: false,
+            
+            activeClient: null,
+            pedidosActivos: [],
+            loadingPedidos: false,
+            
+            pedidosSeleccionados: [],
+            detallesPago: '',
+            metodoPagoLiquidar: '',
+            procesandoPago: false,
+            pagoMsg: '',
+            pagoError: false,
+            
+            modalAbono: false,
+            pedidoAbono: null,
+            procesandoAbono: false,
+            abonoForm: { monto: '', metodo_pago: '', detalles: '' },
+            intervaloRecordatorio: '3',
+            
+            initModule() {
+                this.fetchDeudores();
+                this.cargarIntervalo();
+            },
+            
+            async cargarIntervalo() {
+                try {
+                    const res = await fetch('/api/configuracion/intervalo_recordatorio');
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.intervaloRecordatorio = data.valor;
+                    }
+                } catch (e) {
+                    console.error("Error cargando intervalo de recordatorio:", e);
+                }
+            },
+            
+            async guardarIntervalo() {
+                try {
+                    const res = await fetch('/api/configuracion/intervalo_recordatorio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ valor: this.intervaloRecordatorio })
+                    });
+                    if (!res.ok) {
+                        alert("Error guardando intervalo");
+                    }
+                } catch (e) {
+                    console.error("Error guardando intervalo:", e);
+                    alert("Error en la conexión con el servidor.");
+                }
+            },
+            
+            get filteredDeudores() {
+                if (this.searchQuery === '') {
+                    return this.deudores;
+                }
+                const lowerCaseQuery = this.searchQuery.toLowerCase();
+                return this.deudores.filter(c => {
+                    return c.nombre_empresa.toLowerCase().includes(lowerCaseQuery) ||
+                           c.contacto_nombre.toLowerCase().includes(lowerCaseQuery);
+                });
+            },
+            
+            async fetchDeudores() {
+                this.loadingDeudores = true;
+                try {
+                    const res = await fetch('/api/finanzas/deudores');
+                    if (res.ok) {
+                        this.deudores = await res.json();
+                    }
+                } catch (e) {
+                    console.error("Error al cargar deudores:", e);
+                } finally {
+                    this.loadingDeudores = false;
+                }
+            },
+            
+            async seleccionarCliente(cliente) {
+                this.activeClient = cliente;
+                this.pedidosSeleccionados = [];
+                this.detallesPago = '';
+                this.pagoMsg = '';
+                await this.fetchPedidosCliente(cliente.id);
+            },
+            
+            async fetchPedidosCliente(clienteId) {
+                this.loadingPedidos = true;
+                this.pedidosActivos = [];
+                try {
+                    const res = await fetch(`/api/finanzas/deudores/${clienteId}/pedidos`);
+                    if (res.ok) {
+                        this.pedidosActivos = await res.json();
+                    }
+                } catch (e) {
+                    console.error("Error al cargar pedidos:", e);
+                } finally {
+                    this.loadingPedidos = false;
+                }
+            },
+            
+            async procesarPago() {
+                if(this.pedidosSeleccionados.length === 0 || !this.metodoPagoLiquidar) return;
+                
+                this.procesandoPago = true;
+                this.pagoMsg = '';
+                this.pagoError = false;
+                
+                try {
+                    const res = await fetch('/api/finanzas/pagar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            pedidos: this.pedidosSeleccionados,
+                            detalles: this.detallesPago,
+                            metodo_pago: this.metodoPagoLiquidar
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        this.pagoError = false;
+                        this.pagoMsg = "¡Pagos registrados exitosamente!";
+                        this.pedidosSeleccionados = [];
+                        this.detallesPago = '';
+                        this.metodoPagoLiquidar = '';
+                        
+                        // Refrescar datos
+                        await this.fetchPedidosCliente(this.activeClient.id);
+                        await this.fetchDeudores();
+                        
+                        // Si ya no tiene pedidos, cerramos el panel
+                        if(this.pedidosActivos.length === 0) {
+                            setTimeout(() => {
+                                this.activeClient = null;
+                                this.pagoMsg = '';
+                            }, 2000);
+                        }
+                    } else {
+                        this.pagoError = true;
+                        this.pagoMsg = data.error || "Error al procesar el pago.";
+                    }
+                } catch(e) {
+                    this.pagoError = true;
+                    this.pagoMsg = "Error de red al procesar el pago.";
+                } finally {
+                    this.procesandoPago = false;
+                    setTimeout(() => { this.pagoMsg = ''; }, 5000);
+                }
+            },
+            
+            abrirModalAbono(pedido) {
+                this.pedidoAbono = pedido;
+                this.abonoForm.monto = '';
+                this.abonoForm.metodo_pago = '';
+                this.abonoForm.detalles = '';
+                this.modalAbono = true;
+            },
+            
+            async guardarAbono() {
+                if (!this.pedidoAbono || !this.abonoForm.monto || !this.abonoForm.metodo_pago) return;
+                this.procesandoAbono = true;
+                
+                try {
+                    const res = await fetch('/api/finanzas/abonar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            pedido_id: this.pedidoAbono.id,
+                            monto: this.abonoForm.monto,
+                            detalles: this.abonoForm.detalles,
+                            metodo_pago: this.abonoForm.metodo_pago
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (res.ok) {
+                        this.modalAbono = false;
+                        this.pagoError = false;
+                        this.pagoMsg = "¡Abono registrado exitosamente!";
+                        
+                        // Refrescar datos
+                        await this.fetchPedidosCliente(this.activeClient.id);
+                        await this.fetchDeudores();
+                    } else {
+                        alert(data.error || "Error al registrar el abono.");
+                    }
+                } catch (e) {
+                    console.error("Error al registrar abono:", e);
+                    alert("Error de red al registrar el abono.");
+                } finally {
+                    this.procesandoAbono = false;
+                    setTimeout(() => { this.pagoMsg = ''; }, 5000);
+                }
+            }
+        }));
+    });
+</script>
+{% endblock %}

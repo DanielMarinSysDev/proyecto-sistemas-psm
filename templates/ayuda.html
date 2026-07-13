@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Guía de Uso - TaskCore{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ activeTab: 'carpetas' }">
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                Guía de Uso del Sistema
+            </h1>
+            <p class="text-sm text-slate-400 mt-1">Manual interactivo y de inducción rápida para entender la automatización de carpetas, flujos y permisos de TaskCore.</p>
+        </div>
+    </div>
+
+    <!-- Selector de Pestañas -->
+    <div class="flex border-b border-slate-800/80 gap-2 overflow-x-auto pb-px">
+        <button @click="activeTab = 'carpetas'"
+                class="px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+                :class="activeTab === 'carpetas' ? 'border-blue-500 text-blue-400 bg-blue-500/5' : 'border-transparent text-slate-400 hover:text-slate-200'">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+            Carpetas de Producción
+        </button>
+        <button @click="activeTab = 'hotfolders'"
+                class="px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+                :class="activeTab === 'hotfolders' ? 'border-orange-500 text-orange-400 bg-orange-500/5' : 'border-transparent text-slate-400 hover:text-slate-200'">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Hot Folders
+        </button>
+        <button @click="activeTab = 'roles'"
+                class="px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+                :class="activeTab === 'roles' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5' : 'border-transparent text-slate-400 hover:text-slate-200'">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            Roles y Permisos
+        </button>
+    </div>
+
+    <!-- Contenido de Pestañas -->
+    
+    <!-- Pestaña 1: Carpetas -->
+    <div x-show="activeTab === 'carpetas'" x-transition class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass p-6 rounded-xl border border-slate-800 space-y-4 col-span-2">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                    Estructura del Servidor de Archivos
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    Al confirmar o crear una orden, el sistema genera automáticamente una estructura jerárquica en el servidor de almacenamiento. Esto evita archivos sueltos y asegura el orden del taller.
+                </p>
+                <div class="p-4 bg-slate-950/60 rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
+                    <p class="text-slate-500">// Ruta generada físicamente:</p>
+                    <p class="text-white mt-1">📦 TaskCore_Archivos /</p>
+                    <p class="pl-4 text-blue-400">└─ 📂 Pedidos / [Año] /</p>
+                    <p class="pl-8 text-violet-400">   └─ 📂 [Cliente_ID] - [Nombre_Cliente] /</p>
+                    <p class="pl-12 text-white font-bold">      └─ 📂 [Pedido_ID] - [Nombre_Proyecto] /</p>
+                    <p class="pl-16 text-emerald-400">         ├─ 📂 01_Diseno_Editable / <span class="text-slate-500">(Ai, Psd, Cdr)</span></p>
+                    <p class="pl-16 text-emerald-400">         ├─ 📂 02_Muestras_Aprobacion / <span class="text-slate-500">(Jpg, Png)</span></p>
+                    <p class="pl-16 text-emerald-400">         └─ 📂 03_Salida_Impresion / <span class="text-slate-500">(Tiff, Pdf final)</span></p>
+                </div>
+            </div>
+            
+            <div class="glass p-6 rounded-xl border border-slate-800 space-y-4">
+                <h4 class="text-md font-bold text-white">¿Cómo abrir la carpeta local?</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    El sistema utiliza el protocolo registrado <code class="bg-slate-950 text-blue-300 px-1 py-0.5 rounded font-mono">taskcore://</code>. 
+                </p>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    En el Dashboard de Kanban o en el panel de detalles, al hacer clic en el botón de la carpeta, el navegador se comunicará con tu sistema operativo para abrir directamente el Explorador de Archivos de Windows en la carpeta del pedido correspondiente.
+                </p>
+                <div class="flex items-center gap-2 p-2 bg-slate-900/50 rounded border border-slate-800 text-xs text-blue-400">
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Disponible en computadoras de la red local configuradas.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="glass p-5 rounded-xl border border-slate-800/60 space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
+                    <span class="font-bold text-sm">01</span>
+                </div>
+                <h4 class="text-sm font-bold text-white">01_Diseno_Editable</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Aquí van todos los archivos fuente de diseño. Solo el diseñador y el administrador modifican estos recursos.</p>
+            </div>
+            
+            <div class="glass p-5 rounded-xl border border-slate-800/60 space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 mb-3">
+                    <span class="font-bold text-sm">02</span>
+                </div>
+                <h4 class="text-sm font-bold text-white">02_Muestras_Aprobacion</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Contiene imágenes previsualizables (JPG/PNG). Al subir una muestra al sistema, se guarda aquí y se envía al cliente.</p>
+            </div>
+            
+            <div class="glass p-5 rounded-xl border border-slate-800/60 space-y-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-3">
+                    <span class="font-bold text-sm">03</span>
+                </div>
+                <h4 class="text-sm font-bold text-white">03_Salida_Impresion</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Los archivos acoplados listos para imprimir en alta definición. Al guardarse aquí, el sistema los asocia a la máquina indicada.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestaña 2: Hotfolders -->
+    <div x-show="activeTab === 'hotfolders'" x-transition class="space-y-6" style="display: none;">
+        <div class="glass p-6 rounded-xl border border-slate-800 space-y-4">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                El flujo de Hot Folders (Watcher)
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                El sistema monitorea activamente las subcarpetas del servidor. Cuando el diseñador deposita un archivo listo en <code class="bg-slate-950 text-blue-300 px-1 py-0.5 rounded font-mono">03_Salida_Impresion</code>, el monitor detecta el cambio e interactúa de la siguiente forma:
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div class="bg-slate-900/50 p-5 rounded-xl border border-slate-800 space-y-3">
+                    <h4 class="font-semibold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        1. Creación del Enlace de Producción
+                    </h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        El watcher determina la máquina según el material y tipo de trabajo de la orden y crea un <strong>enlace duro (hard link)</strong> en el directorio local de la máquina:
+                    </p>
+                    <ul class="text-[11px] font-mono text-slate-300 space-y-1 pl-4 list-disc">
+                        <li>Plotter Vinilo &rarr; <code class="text-orange-300">D:\Impresion_Plotter</code></li>
+                        <li>Acrílico & PVC &rarr; <code class="text-orange-300">D:\Corte_CNC</code></li>
+                        <li>Impresión UV &rarr; <code class="text-orange-300">D:\Impresion_UV</code></li>
+                    </ul>
+                </div>
+                
+                <div class="bg-slate-900/50 p-5 rounded-xl border border-slate-800 space-y-3">
+                    <h4 class="font-semibold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        2. Cierre Automático
+                    </h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Una vez que el operador de la máquina termina de producir el trabajo y mueve el archivo a la carpeta de completados del plotter, el watcher detecta el movimiento y de inmediato:
+                    </p>
+                    <ul class="text-[11px] text-slate-300 space-y-1 pl-4 list-none">
+                        <li class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Mueve el Kanban a <strong>Listo para Instalar / Entregar</strong>.</li>
+                        <li class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Envía notificación automática al cliente por WhatsApp.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestaña 3: Roles -->
+    <div x-show="activeTab === 'roles'" x-transition class="space-y-6" style="display: none;">
+        <!-- Matriz Interactiva -->
+        <div class="glass p-6 rounded-xl border border-slate-800 space-y-4">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                Matriz de Control de Acceso (RBAC)
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+                Cada miembro del equipo tiene asignado un rol específico en el sistema. El sistema aplica restricciones estrictas para proteger la confidencialidad de la facturación y optimizar las tareas de cada quien.
+            </p>
+            
+            <div class="overflow-x-auto rounded-lg border border-slate-800">
+                <table class="min-w-full divide-y divide-slate-800 text-xs">
+                    <thead class="bg-slate-900">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-semibold text-slate-300">Función</th>
+                            <th class="px-4 py-3 text-center font-semibold text-blue-400">Admin</th>
+                            <th class="px-4 py-3 text-center font-semibold text-violet-400">Gerencia</th>
+                            <th class="px-4 py-3 text-center font-semibold text-teal-400">Ventas</th>
+                            <th class="px-4 py-3 text-center font-semibold text-yellow-400">Diseñador</th>
+                            <th class="px-4 py-3 text-center font-semibold text-orange-400">Producción</th>
+                            <th class="px-4 py-3 text-center font-semibold text-pink-400">Instalador</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800 bg-slate-950/20">
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-200">Gestionar Usuarios / Tarifas</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-200">Ver Reportes y Finanzas</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-200">Ver Precios en Kanban</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-amber-500 font-semibold">Condicional</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-200">Crear Pedidos / Clientes</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-200">Subir Muestras / Diseños</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-slate-200">Marcar como Completado</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-red-500">No</td>
+                            <td class="px-4 py-3 text-center text-emerald-400 font-bold">Sí</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

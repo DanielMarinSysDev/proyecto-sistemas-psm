@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: taskcore_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sistema_taskcore}
+      POSTGRES_USER: ${DB_USER:-taskcore_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-taskcore_pass_123}
+    ports:
+      - "${DB_PORT_HOST:-5432}:5432"
+    volumes:
+      - ${DB_DATA_DIR:-./db_data}:/var/lib/postgresql/data
+
+  web:
+    build: .
+    image: taskcore_web:latest
+    container_name: taskcore_web
+    hostname: web.local
+    restart: always
+    ports:
+      - "${WEB_PORT_HOST:-80}:80"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-taskcore_user}:${DB_PASSWORD:-taskcore_pass_123}@db:5432/${DB_NAME:-sistema_taskcore}
+      - BASE_DIR=/app/TaskCore_Archivos
+      - SECRET_KEY=${SECRET_KEY:-prod_key_secreta_taskcore}
+    depends_on:
+      - db
+    volumes:
+      - ${BASE_DIR_HOST:-./TaskCore_Archivos}:/app/TaskCore_Archivos
+      - ./templates:/app/templates
+      - ./static:/app/static
+      - ./app.py:/app/app.py
+      - ./file_manager.py:/app/file_manager.py
+      - ./database_models.py:/app/database_models.py
+      - ./seed.py:/app/seed.py
+      - ./limpiar_produccion.py:/app/limpiar_produccion.py
+      - ./routes_auth.py:/app/routes_auth.py
+      - ./routes_clientes.py:/app/routes_clientes.py
+      - ./routes_dashboard.py:/app/routes_dashboard.py
+      - ./routes_finanzas.py:/app/routes_finanzas.py
+      - ./routes_precios.py:/app/routes_precios.py
+      - ./routes_recepcion.py:/app/routes_recepcion.py
+      - ./routes_usuarios.py:/app/routes_usuarios.py
+      - ./utils_bcv.py:/app/utils_bcv.py
+      - ./respaldar_db.py:/app/respaldar_db.py
+      - ./restaurar_db.py:/app/restaurar_db.py
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
