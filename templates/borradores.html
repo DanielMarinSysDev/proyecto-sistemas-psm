@@ -19,29 +19,11 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h1 class="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                Borradores del Asistente Virtual
+                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Borradores de Órdenes
             </h1>
-            <p class="text-sm text-slate-400 mt-1">Órdenes de trabajo capturadas y pre-calculadas automáticamente por el bot de WhatsApp con Inteligencia Artificial.</p>
+            <p class="text-sm text-slate-400 mt-1">Listado de borradores de órdenes de trabajo creados para su posterior confirmación o edición.</p>
         </div>
-    </div>
-
-    <!-- Selector de Pestañas -->
-    <div class="flex border-b border-slate-800/80 gap-2">
-        <button @click="filtroTab = 'bot'"
-                class="px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2"
-                :class="filtroTab === 'bot' ? 'border-blue-500 text-blue-400 bg-blue-500/5' : 'border-transparent text-slate-400 hover:text-slate-200'">
-            <svg class="w-4.5 h-4.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-            Borradores del Bot
-            <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-blue-900/40 text-blue-300 font-bold" x-text="borradores.filter(b => b.es_bot).length"></span>
-        </button>
-        <button @click="filtroTab = 'manual'"
-                class="px-5 py-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-2"
-                :class="filtroTab === 'manual' ? 'border-violet-500 text-violet-400 bg-violet-500/5' : 'border-transparent text-slate-400 hover:text-slate-200'">
-            <svg class="w-4.5 h-4.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            Borradores Manuales
-            <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-violet-900/40 text-violet-300 font-bold" x-text="borradores.filter(b => !b.es_bot).length"></span>
-        </button>
     </div>
 
     <!-- Buscador y Filtro -->
@@ -53,7 +35,7 @@
             <input x-model="search" type="text" class="block w-full pl-10 pr-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" placeholder="Buscar por cliente o proyecto...">
         </div>
         <div class="text-sm text-slate-400">
-            Total en esta pestaña: <span class="font-bold text-white" x-text="filtrarBorradores().length"></span>
+            Total borradores: <span class="font-bold text-white" x-text="filtrarBorradores().length"></span>
         </div>
     </div>
 
@@ -64,7 +46,7 @@
                 <thead class="bg-slate-900/80">
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Cliente</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Proyecto (Sugerido por Bot)</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Nombre del Proyecto / Trabajo</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Especificaciones / Conversión</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Monto Estimado</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Fecha Creación</th>
@@ -153,9 +135,9 @@
                         <input type="text" x-model="confirmForm.referencia" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Diseñador Asignado</label>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Técnico Asignado</label>
                         <select x-model="confirmForm.disenador_id" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500">
-                            <option value="">Seleccionar Diseñador...</option>
+                            <option value="">Seleccionar Técnico...</option>
                             <template x-for="d in disenadores" :key="d.id">
                                 <option :value="d.id" x-text="d.nombre"></option>
                             </template>
@@ -283,7 +265,6 @@ function borradoresAdmin() {
         borradores: [],
         disenadores: [],
         search: '',
-        filtroTab: 'bot',
         modalConfirmar: false,
         modalEditar: false,
         selectedBorrador: null,
@@ -386,8 +367,6 @@ function borradoresAdmin() {
         filtrarBorradores() {
             const query = this.search.toLowerCase();
             return this.borradores.filter(b => {
-                const matchTab = this.filtroTab === 'bot' ? b.es_bot : !b.es_bot;
-                if (!matchTab) return false;
                 return b.cliente_nombre.toLowerCase().includes(query) ||
                        b.nombre_proyecto.toLowerCase().includes(query) ||
                        b.especificaciones.toLowerCase().includes(query);

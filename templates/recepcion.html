@@ -235,24 +235,31 @@
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Tipo de Trabajo *</label>
+                                <label class="block text-xs font-medium text-slate-400 mb-1" x-text="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Categoría de Dispositivo *' : 'Tipo de Trabajo *'"></label>
                                 <select x-model="articulo.tipo_trabajo" @change="articulo.material = ''; if(articulo.tipo_trabajo === 'Sticker') { articulo.cantidad = 1; articulo.instalacion_pvc = false; articulo.grosor_pvc = ''; } if(!['Sticker', 'Impresión y Corte', 'Impresión'].includes(articulo.tipo_trabajo)) { articulo.laminado = false; }; $nextTick(() => recalcularPrecio(index));" required class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
                                     <option value="" disabled selected>Seleccione...</option>
-                                    <option value="Impresión">Impresión</option>
-                                    <option value="Impresión y Corte">Impresión y Corte</option>
-                                    <option value="Impresión UV">Impresión UV</option>
-                                    <option value="Sticker">Sticker</option>
-                                    <option value="Corte Vinil">Corte Vinil</option>
-                                    <option value="Corte Acrílico">Corte Acrílico</option>
-                                    <option value="Corpórea">Corpórea</option>
-                                    <option value="Banner">Banner</option>
-                                    <option value="Otro">Otro</option>
+                                    <option value="Computadora / Laptop">Computadora / Laptop</option>
+                                    <option value="Celular / Smartphone">Celular / Smartphone</option>
+                                    <option value="Tablet">Tablet</option>
+                                    <option value="Servidor / Redes">Servidor / Redes</option>
+                                    <option value="Consola de Videojuegos">Consola de Videojuegos</option>
+                                    <option value="Otro">Otro / Especial</option>
+                                    <optgroup label="Diseño e Impresión (Legado)">
+                                        <option value="Impresión">Impresión</option>
+                                        <option value="Impresión y Corte">Impresión y Corte</option>
+                                        <option value="Impresión UV">Impresión UV</option>
+                                        <option value="Sticker">Sticker</option>
+                                        <option value="Corte Vinil">Corte Vinil</option>
+                                        <option value="Corte Acrílico">Corte Acrílico</option>
+                                        <option value="Corpórea">Corpórea</option>
+                                        <option value="Banner">Banner</option>
+                                    </optgroup>
                                 </select>
                             </div>
-                               <div x-show="['Impresión', 'Impresión y Corte', 'Sticker', 'Impresión UV', 'Banner', 'Corte Vinil', 'Corte Acrílico'].includes(articulo.tipo_trabajo)">
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Material</label>
+                            <div x-show="articulo.tipo_trabajo">
+                                <label class="block text-xs font-medium text-slate-400 mb-1" x-text="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Servicio / Repuesto *' : 'Material *'"></label>
                                 <select x-model="articulo.material" @change="$nextTick(() => { if(['Microperforado', 'Vinil Transparente'].includes(articulo.material)) { articulo.laminado = false; }; recalcularPrecio(index); })" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all">
-                                    <option value="">N/A</option>
+                                    <option value="">Seleccione...</option>
                                     <template x-for="mat in getMaterialesDisponibles(articulo.tipo_trabajo)" :key="mat">
                                         <option :value="mat" x-text="mat"></option>
                                     </template>
@@ -260,8 +267,8 @@
                             </div>
                         </div>
                         
-                        <div class="grid gap-3 mb-3" :class="articulo.tipo_trabajo === 'Sticker' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'">
-                            <div>
+                        <div class="grid gap-3 mb-3" :class="!['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) && articulo.tipo_trabajo === 'Sticker' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'">
+                            <div x-show="articulo.tipo_trabajo && !['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo)">
                                 <label class="block text-xs font-medium text-slate-400 mb-1" x-text="articulo.tipo_trabajo === 'Sticker' ? 'Metraje (Largo)' : 'Medidas (Ancho x Alto)'"></label>
                                 
                                 <!-- Contenedor de 3 inputs (Normal) -->
@@ -290,7 +297,7 @@
                                     <option value="Más de 5 Metros (Especificar)">Más de 5 Metros (Especificar en adicionales)</option>
                                 </select>
                             </div>
-                            <div x-show="articulo.tipo_trabajo !== 'Sticker'">
+                            <div x-show="articulo.tipo_trabajo !== 'Sticker'" :class="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'col-span-2' : ''">
                                 <label class="block text-xs font-medium text-slate-400 mb-1">Cantidad</label>
                                 <input x-model="articulo.cantidad" @input.debounce.500ms="recalcularPrecio(index)" type="number" min="1" :required="articulo.tipo_trabajo !== 'Sticker'" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="1">
                             </div>
@@ -355,11 +362,11 @@
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Especificaciones Adicionales</label>
-                                <textarea x-model="articulo.specs" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all custom-scrollbar" placeholder="Acabados, detalles de corte..."></textarea>
+                                <label class="block text-xs font-medium text-slate-400 mb-1" x-text="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Detalles del Equipo / Diagnóstico *' : 'Especificaciones Adicionales'"></label>
+                                <textarea x-model="articulo.specs" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all custom-scrollbar" :placeholder="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Marca, Modelo, Serial, fallas reportadas, estado estético...' : 'Acabados, detalles de corte...'"></textarea>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-emerald-400 mb-1">Enlace a Recursos (Drive, WeTransfer...)</label>
+                                <label class="block text-xs font-medium text-emerald-400 mb-1" x-text="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Enlace a Respaldos / Diagnósticos (Opcional)' : 'Enlace a Recursos (Drive, WeTransfer...)'"></label>
                                 <textarea x-model="articulo.enlace_recursos" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition-all custom-scrollbar" placeholder="https://drive.google.com/..."></textarea>
                             </div>
                         </div>
@@ -367,10 +374,10 @@
                         <div class="mt-3 pt-3 border-t border-slate-700/50">
                             <label class="block text-xs font-medium text-violet-400 mb-1 flex items-center">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                Asignación Directa de Diseñador (Opcional)
+                                <span x-text="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Asignación Directa de Técnico (Opcional)' : 'Asignación Directa de Diseñador (Opcional)'"></span>
                             </label>
                             <select x-model="articulo.disenador_id" class="w-full sm:w-1/2 bg-slate-900/50 border border-slate-700 rounded-md px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-violet-500 focus:border-transparent transition-all">
-                                <option value="">Sin asignar (Mandar a Cola General)</option>
+                                <option value="" x-text="['Computadora / Laptop', 'Celular / Smartphone', 'Tablet', 'Servidor / Redes', 'Consola de Videojuegos', 'Otro'].includes(articulo.tipo_trabajo) ? 'Sin asignar (Mandar a Cola de Laboratorio)' : 'Sin asignar (Mandar a Cola General)'"></option>
                                 <template x-for="disenador in disenadoresList" :key="disenador.id">
                                     <option :value="disenador.id" x-text="`${disenador.nombre} (${disenador.carga_trabajo} tareas activas)`"></option>
                                 </template>

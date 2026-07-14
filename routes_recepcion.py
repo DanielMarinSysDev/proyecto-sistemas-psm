@@ -449,7 +449,7 @@ def actualizar_estado_orden(orden_id):
             from file_manager import vincular_archivos_a_hot_folder
             from datetime import datetime
             
-            # Inferir máquina
+            # Inferir máquina / taller
             nombre_lower = orden.nombre_proyecto.lower()
             if "corte vinil" in nombre_lower:
                 maquina = "PLOTTER_CORTE"
@@ -459,8 +459,16 @@ def actualizar_estado_orden(orden_id):
                 maquina = "CNC"
             elif "uv" in nombre_lower:
                 maquina = "IMPRESORA_UV"
-            else:
+            elif "sticker" in nombre_lower or "impresión" in nombre_lower or "banner" in nombre_lower:
                 maquina = "PLOTTER"
+            elif "hardware" in nombre_lower or "ram" in nombre_lower or "ssd" in nombre_lower or "pantalla" in nombre_lower or "placa" in nombre_lower or "disco" in nombre_lower or "batería" in nombre_lower:
+                maquina = "LABORATORIO_HARDWARE"
+            elif "software" in nombre_lower or "formateo" in nombre_lower or "sistema" in nombre_lower or "os" in nombre_lower or "clonación" in nombre_lower or "reinstalación" in nombre_lower:
+                maquina = "LABORATORIO_SOFTWARE"
+            elif "diagnóstico" in nombre_lower or "express" in nombre_lower:
+                maquina = "DIAGNOSTICOS"
+            else:
+                maquina = "SOPORTE_TECNICO"
                 
             hoy = datetime.now()
             meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
@@ -1080,7 +1088,7 @@ def repetir_articulo_orden(articulo_id):
         if estado_final == EstadoOrdenEnum.APROBADO_IMPRIMIR:
             from file_manager import vincular_archivos_a_hot_folder, vincular_editable_a_cliente
             
-            # Inferir máquina
+            # Inferir máquina / taller
             nombre_lower = nueva_orden.nombre_proyecto.lower()
             if "corte vinil" in nombre_lower:
                 maquina = "PLOTTER_CORTE"
@@ -1090,8 +1098,16 @@ def repetir_articulo_orden(articulo_id):
                 maquina = "CNC"
             elif "uv" in nombre_lower:
                 maquina = "IMPRESORA_UV"
-            else:
+            elif "sticker" in nombre_lower or "impresión" in nombre_lower or "banner" in nombre_lower:
                 maquina = "PLOTTER"
+            elif "hardware" in nombre_lower or "ram" in nombre_lower or "ssd" in nombre_lower or "pantalla" in nombre_lower or "placa" in nombre_lower or "disco" in nombre_lower or "batería" in nombre_lower:
+                maquina = "LABORATORIO_HARDWARE"
+            elif "software" in nombre_lower or "formateo" in nombre_lower or "sistema" in nombre_lower or "os" in nombre_lower or "clonación" in nombre_lower or "reinstalación" in nombre_lower:
+                maquina = "LABORATORIO_SOFTWARE"
+            elif "diagnóstico" in nombre_lower or "express" in nombre_lower:
+                maquina = "DIAGNOSTICOS"
+            else:
+                maquina = "SOPORTE_TECNICO"
                 
             hoy = datetime.now()
             meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]

@@ -19,20 +19,20 @@ Base = declarative_base()
 class RolEnum(enum.Enum):
     ADMIN = "Administrador"
     GERENCIA = "Gerencia"
-    VENTAS = "Ventas / Recepción"
-    DISENADOR = "Diseñador"
-    PRODUCCION = "Operador de Producción"
-    INSTALADOR = "Instaladores / Operaciones de Campo"
+    VENTAS = "Recepción / Soporte"
+    DISENADOR = "Técnico de Diagnóstico"
+    PRODUCCION = "Técnico de Reparación"
+    INSTALADOR = "Técnico de Campo"
 
 class EstadoOrdenEnum(enum.Enum):
     BORRADOR = "Borrador"
-    PENDIENTE = "Pendiente"
-    EN_DISENO = "En Diseño"
-    EN_REVISION = "En Revisión"
-    APROBADO_IMPRIMIR = "Aprobado para Imprimir"
-    EN_PRODUCCION = "En Producción"
-    LISTO_INSTALAR_ENTREGAR = "Listo para Instalar / Entregar"
-    COMPLETADO = "Completado"
+    PENDIENTE = "Pendiente (Ingreso)"
+    EN_DISENO = "En Diagnóstico"
+    EN_REVISION = "En Revisión (Presupuesto)"
+    APROBADO_IMPRIMIR = "Reparación Aprobada"
+    EN_PRODUCCION = "En Reparación / Servicio"
+    LISTO_INSTALAR_ENTREGAR = "Listo para Entregar"
+    COMPLETADO = "Completado / Entregado"
     CANCELADO = "Cancelado"
 
 # -------------------------------------------------------------------

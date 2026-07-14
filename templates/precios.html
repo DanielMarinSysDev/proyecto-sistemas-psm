@@ -7,8 +7,8 @@
     <!-- Encabezado -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold tracking-tight text-white">Tarifas y Precios de Materiales</h1>
-            <p class="text-sm text-slate-400 mt-1">Configura los costos de materiales y acabados/adicionales para cotizaciones automáticas.</p>
+            <h1 class="text-3xl font-bold tracking-tight text-white">Tarifas y Precios de Servicios</h1>
+            <p class="text-sm text-slate-400 mt-1">Configura los costos de servicios, repuestos y tarifas planas de reparación para cotizaciones automáticas.</p>
         </div>
         <button @click="abrirModalCrear()" class="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -60,13 +60,13 @@
                 :class="tabActiva === 'materiales' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-400 hover:text-slate-200'"
                 class="px-4 py-2.5 text-sm transition-all focus:outline-none flex items-center">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-            Materiales Base
+            Servicios / Tarifas Planas
         </button>
         <button @click="tabActiva = 'adicionales'; filtroTipo = ''; search = '';"
                 :class="tabActiva === 'adicionales' ? 'text-blue-400 border-b-2 border-blue-400 font-semibold' : 'text-slate-400 hover:text-slate-200'"
                 class="px-4 py-2.5 text-sm transition-all focus:outline-none flex items-center">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            Acabados y Adicionales
+            Repuestos / Adicionales
         </button>
     </div>
 
@@ -94,9 +94,9 @@
             <table class="min-w-full divide-y divide-slate-800">
                 <thead class="bg-slate-900/80">
                     <tr>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Tipo de Trabajo' : 'Categoría'"></th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Material / Sustrato' : 'Variación / Acabado'"></th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Precio Base / m²' : 'Precio Unitario o m²'"></th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Categoría de Dispositivo' : 'Categoría'"></th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Servicio / Tarifa' : 'Repuesto / Adicional'"></th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider" x-text="tabActiva === 'materiales' ? 'Precio Base (Tarifa Plana)' : 'Precio Unitario'"></th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider pr-6">Acciones</th>
                     </tr>
                 </thead>
@@ -106,18 +106,16 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                                       :class="{
-                                          'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50': p.tipo_trabajo === 'Sticker',
-                                          'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50': p.tipo_trabajo === 'Impresión',
-                                          'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50': p.tipo_trabajo === 'Impresión y Corte',
-                                          'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50': p.tipo_trabajo === 'Impresión UV',
-                                          'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50': p.tipo_trabajo === 'Banner',
-                                          'bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800/50': p.tipo_trabajo === 'Corte Vinil',
-                                          'bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/50': p.tipo_trabajo === 'Corte Acrílico',
-                                          'bg-slate-100 dark:bg-slate-900/60 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700': p.tipo_trabajo === 'Tablero PVC'
+                                          'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50': p.tipo_trabajo === 'Computadora / Laptop',
+                                          'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50': p.tipo_trabajo === 'Celular / Smartphone',
+                                          'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50': p.tipo_trabajo === 'Tablet',
+                                          'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50': p.tipo_trabajo === 'Servidor / Redes',
+                                          'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50': p.tipo_trabajo === 'Consola de Videojuegos',
+                                          'bg-slate-100 dark:bg-slate-900/60 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700': p.tipo_trabajo === 'Otro'
                                       }"
-                                      x-text="p.tipo_trabajo === 'Tablero PVC' ? 'Tableros PVC' : p.tipo_trabajo"></span>
+                                      x-text="p.tipo_trabajo"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200" x-text="p.tipo_trabajo === 'Tablero PVC' ? 'Instalación PVC ' + p.material.replace('mm', ' mm') : p.material"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200" x-text="p.material"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono" x-text="'$' + p.precio_m2.toFixed(2)"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium pr-6 space-x-2">
                                 <button @click="abrirModalEditar(p)" class="text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/40 px-2.5 py-1 rounded transition-colors">Editar</button>
@@ -147,7 +145,7 @@
             
             <form @submit.prevent="guardarPrecio" class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">1. Selecciona Tipo de Trabajo</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">1. Selecciona Categoría de Dispositivo</label>
                     <select x-model="form.tipo_trabajo" required class="block w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">
                         <option value="">Seleccione...</option>
                         <template x-for="tipo in tiposTrabajo" :key="tipo">
@@ -161,22 +159,22 @@
                     <div class="flex items-center space-x-6 mt-1">
                         <label class="inline-flex items-center text-sm text-slate-200 cursor-pointer">
                             <input type="radio" :checked="!form.es_adicional" @change="form.es_adicional = false" :value="false" name="es_adicional" class="form-radio text-blue-600 bg-slate-950 border-slate-700 focus:ring-blue-500">
-                            <span class="ml-2">Material Base</span>
+                            <span class="ml-2">Servicio / Tarifa Plana</span>
                         </label>
                         <label class="inline-flex items-center text-sm text-slate-200 cursor-pointer">
                             <input type="radio" :checked="form.es_adicional" @change="form.es_adicional = true" :value="true" name="es_adicional" class="form-radio text-blue-600 bg-slate-950 border-slate-700 focus:ring-blue-500">
-                            <span class="ml-2">Acabado o Adicional</span>
+                            <span class="ml-2">Repuesto o Adicional</span>
                         </label>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2" x-text="form.es_adicional ? '3. Describe qué Acabado/Adicional es' : '3. Describe qué Material Base es'"></label>
-                    <input x-model="form.material" type="text" required class="block w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500" :placeholder="form.es_adicional ? 'ej. Laminado, Bastidor Madera, Ojetes' : 'ej. Vinil Brillante, Lona Banner 13oz'">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2" x-text="form.es_adicional ? '3. Describe qué Repuesto/Adicional es' : '3. Describe qué Servicio / Tarifa Plana es'"></label>
+                    <input x-model="form.material" type="text" required class="block w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500" :placeholder="form.es_adicional ? 'ej. Pantalla de Repuesto, SSD 480GB Kingston' : 'ej. Diagnóstico General, Mantenimiento preventivo, Reinstalación OS'">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">4. Precio por m² o Unidad</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">4. Precio / Tarifa Fija ($ USD)</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">$</span>
                         <input x-model.number="form.precio_m2" type="number" step="0.01" min="0" required class="block w-full pl-7 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500">

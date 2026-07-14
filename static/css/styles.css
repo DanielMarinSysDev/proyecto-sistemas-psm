@@ -81,6 +81,57 @@ html:not(.dark) {
     --sem-danger: #CF222E; /* Rojo sólido */
 }
 
+/* --- Sobrescribir clases utilitarias de Tailwind para asegurar contraste y legibilidad --- */
+
+/* Asegurar contraste correcto en modo oscuro (por defecto o con clase .dark) */
+html.dark .text-slate-300,
+:root .text-slate-300 {
+    color: #cbd5e1 !important; /* Gris claro legible */
+}
+html.dark .text-slate-400,
+:root .text-slate-400 {
+    color: #94a3b8 !important; /* Gris medio legible */
+}
+
+/* Asegurar contraste correcto en modo claro */
+html:not(.dark) .text-slate-300 {
+    color: var(--slate-400) !important;
+}
+html:not(.dark) .text-slate-400 {
+    color: var(--slate-500) !important;
+}
+html:not(.dark) .text-slate-200 {
+    color: var(--slate-200) !important;
+}
+html:not(.dark) .border-slate-800 {
+    border-color: var(--slate-300) !important;
+}
+html:not(.dark) .border-slate-700 {
+    border-color: var(--slate-300) !important;
+}
+html:not(.dark) .border-slate-850 {
+    border-color: var(--slate-300) !important;
+}
+html:not(.dark) .bg-slate-900\/50 {
+    background-color: rgba(0, 104, 167, 0.05) !important;
+}
+html:not(.dark) .bg-slate-900\/40 {
+    background-color: rgba(0, 104, 167, 0.03) !important;
+}
+html:not(.dark) .bg-slate-900 {
+    background-color: var(--slate-900) !important;
+}
+html:not(.dark) .bg-slate-850 {
+    background-color: var(--slate-850) !important;
+}
+html:not(.dark) .hover\:text-white:hover {
+    color: var(--slate-200) !important;
+}
+html:not(.dark) .hover\:bg-slate-800\/50:hover {
+    background-color: rgba(0, 104, 167, 0.08) !important;
+}
+
+
 body {
     background-color: var(--slate-900);
     background-image: 
@@ -185,7 +236,7 @@ html:not(.dark) span.text-white,
 html:not(.dark) p.text-white,
 html:not(.dark) div.text-white,
 html:not(.dark) .text-white:not(button):not(a):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-red-"]):not(.bg-gradient-to-r) {
-    color: var(--slate-100) !important;
+    color: var(--slate-200) !important;
 }
 
 /* Ensure white text inside buttons or badges stays white */

@@ -295,11 +295,11 @@ class TestSistemaTaskCore(unittest.TestCase):
             with open(mock_salida, "w") as f:
                 f.write("print mock data")
                 
-            # Cambiar estado a Aprobado para Imprimir
+            # Cambiar estado a Reparación Aprobada
             resp = self.client.put(
                 f'/api/ordenes/{orden.id}/estado',
                 json={
-                    'nuevo_estado': 'Aprobado para Imprimir',
+                    'nuevo_estado': 'Reparación Aprobada',
                     'usuario_id': 3
                 }
             )
@@ -678,7 +678,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp = self.client.put('/api/usuarios/3', json={
             "nombre": "Nombre Editado",
             "email": "editado@taskcore.com",
-            "rol": "Diseñador"
+            "rol": "Técnico de Diagnóstico"
         })
         self.assertEqual(resp.status_code, 403)
         self.logout()
@@ -688,7 +688,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp = self.client.put('/api/usuarios/3', json={
             "nombre": "Diseno Test Modificado",
             "email": "diseno_mod@taskcore.com",
-            "rol": "Diseñador",
+            "rol": "Técnico de Diagnóstico",
             "password": "nuevapassword123"
         })
         self.assertEqual(resp.status_code, 200)
@@ -697,7 +697,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp_dup = self.client.put('/api/usuarios/3', json={
             "nombre": "Diseno Test Modificado",
             "email": "admin@taskcore.com",
-            "rol": "Diseñador"
+            "rol": "Técnico de Diagnóstico"
         })
         self.assertEqual(resp_dup.status_code, 400)
         
@@ -932,7 +932,7 @@ class TestSistemaTaskCore(unittest.TestCase):
             "nombre": "Vendedor Gerencia",
             "email": "vendedor_ger@taskcore.com",
             "password": "vendedor123",
-            "rol": "Ventas / Recepción"
+            "rol": "Recepción / Soporte"
         })
         self.assertEqual(resp_ok_ventas.status_code, 201)
 
@@ -961,7 +961,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp_edit_vendedor = self.client.put(f'/api/usuarios/{vendedor_id}', json={
             "nombre": "Vendedor Modificado",
             "email": "vendedor_ger@taskcore.com",
-            "rol": "Ventas / Recepción"
+            "rol": "Recepción / Soporte"
         })
         self.assertEqual(resp_edit_vendedor.status_code, 200)
 

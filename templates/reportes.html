@@ -12,7 +12,7 @@
                 <svg class="w-8 h-8 mr-3 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                 Historial y Métricas de Rendimiento
             </h1>
-            <p class="mt-2 text-sm text-slate-400">Seguimiento mensual de producción, facturación y consumo de materiales.</p>
+            <p class="mt-2 text-sm text-slate-400">Seguimiento mensual de soporte técnico, facturación y repuestos.</p>
         </div>
         
         <!-- Filtros de fecha -->
@@ -151,13 +151,14 @@
                             <div class="p-4 rounded-lg bg-slate-900/50 border border-slate-800 text-center hover:border-blue-500/30 transition-all">
                                 <span class="text-[10px] font-bold uppercase tracking-wider block"
                                       :class="{
-                                          'text-slate-400': est === 'PENDIENTE',
-                                          'text-blue-400': est === 'DISENO',
-                                          'text-amber-400': est === 'APROBADO_DISENO',
-                                          'text-violet-400': est === 'PRODUCCION',
-                                          'text-emerald-400': est === 'LISTO',
-                                          'text-emerald-500': est === 'ENTREGADO',
-                                          'text-red-400': est === 'CON_INCIDENCIA'
+                                          'text-slate-400': est === 'Pendiente (Ingreso)',
+                                          'text-blue-400': est === 'En Diagnóstico',
+                                          'text-amber-400': est === 'En Revisión (Presupuesto)',
+                                          'text-yellow-500': est === 'Reparación Aprobada',
+                                          'text-violet-400': est === 'En Reparación / Servicio',
+                                          'text-emerald-400': est === 'Listo para Entregar',
+                                          'text-emerald-500': est === 'Completado / Entregado',
+                                          'text-red-400': est === 'Cancelado'
                                       }"
                                       x-text="est.replace('_', ' ')"></span>
                                 <span class="text-3xl font-bold text-white font-mono mt-2 block" x-text="cant"></span>
@@ -225,13 +226,12 @@
                                             <td class="px-4 py-3 text-sm whitespace-nowrap">
                                                 <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full"
                                                       :class="{
-                                                          'bg-blue-900/40 text-blue-300 border border-blue-800/50': k === 'Sticker',
-                                                          'bg-emerald-900/40 text-emerald-300 border border-emerald-800/50': k === 'Impresión',
-                                                          'bg-violet-900/40 text-violet-300 border border-violet-800/50': k === 'Impresión y Corte',
-                                                          'bg-amber-900/40 text-amber-300 border border-amber-800/50': k === 'Impresión UV',
-                                                          'bg-orange-900/40 text-orange-300 border border-orange-800/50': k === 'Banner',
-                                                          'bg-pink-900/40 text-pink-300 border border-pink-800/50': k === 'Corte Vinil',
-                                                          'bg-teal-900/40 text-teal-300 border border-teal-800/50': k === 'Corte Acrílico'
+                                                          'bg-blue-900/40 text-blue-300 border border-blue-800/50': k === 'Computadora / Laptop',
+                                                          'bg-emerald-900/40 text-emerald-300 border border-emerald-800/50': k === 'Celular / Smartphone',
+                                                          'bg-violet-900/40 text-violet-300 border border-violet-800/50': k === 'Tablet',
+                                                          'bg-amber-900/40 text-amber-300 border border-amber-800/50': k === 'Servidor / Redes',
+                                                          'bg-pink-900/40 text-pink-300 border border-pink-800/50': k === 'Consola de Videojuegos',
+                                                          'bg-indigo-900/40 text-indigo-300 border border-indigo-800/50': k === 'Otro'
                                                       }"
                                                       x-text="k"></span>
                                             </td>
@@ -252,19 +252,19 @@
                     </div>
                 </div>
 
-                <!-- Consumo de Materiales -->
+                <!-- Consumo de Materiales / Servicios -->
                 <div class="glass border border-slate-800 rounded-xl overflow-hidden">
                     <div class="p-4 border-b border-slate-800 bg-slate-900/50">
-                        <h3 class="text-md font-semibold text-white">Consumo de Materiales y Sustratos</h3>
+                        <h3 class="text-md font-semibold text-white">Servicios y Repuestos Utilizados</h3>
                     </div>
                     <div class="p-4">
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-slate-850">
                                 <thead>
                                     <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-400 uppercase">Material</th>
-                                        <th class="px-4 py-2 text-right text-xs font-semibold text-slate-400 uppercase">Artículos</th>
-                                        <th class="px-4 py-2 text-right text-xs font-semibold text-slate-400 uppercase">Área Utilizada</th>
+                                        <th class="px-4 py-2 text-left text-xs font-semibold text-slate-400 uppercase">Servicio / Repuesto</th>
+                                        <th class="px-4 py-2 text-right text-xs font-semibold text-slate-400 uppercase">Cantidad</th>
+                                        <th class="px-4 py-2 text-right text-xs font-semibold text-slate-400 uppercase">Detalle / m²</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-800/40">
@@ -278,7 +278,7 @@
                                     <template x-if="Object.keys(datos.por_material).length === 0">
                                         <tr>
                                             <td colspan="3" class="px-4 py-6 text-center text-slate-500 italic text-sm">
-                                                Sin consumo de materiales registrado.
+                                                Sin uso de repuestos o servicios registrado.
                                             </td>
                                         </tr>
                                     </template>
@@ -327,10 +327,10 @@
                     </div>
                 </div>
 
-                <!-- Rendimiento de Diseñadores -->
+                <!-- Rendimiento de Técnicos -->
                 <div class="glass border border-slate-800 rounded-xl overflow-hidden">
                     <div class="p-4 border-b border-slate-800 bg-slate-900/50">
-                        <h3 class="text-md font-semibold text-white">Rendimiento de Diseñadores</h3>
+                        <h3 class="text-md font-semibold text-white">Rendimiento de Técnicos (Diagnóstico)</h3>
                     </div>
                     <div class="p-4">
                         <div class="space-y-4 font-sans">
@@ -354,7 +354,7 @@
                             </template>
                             <template x-if="Object.keys(datos.disenadores).length === 0">
                                 <div class="text-center py-8 text-slate-500 italic text-sm">
-                                    No hay diseñadores registrados en el sistema.
+                                    No hay técnicos de diagnóstico registrados en el sistema.
                                 </div>
                             </template>
                         </div>
@@ -457,17 +457,17 @@
                 <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
-                        <!-- Columna Izquierda: Información de Producción -->
+                        <!-- Columna Izquierda: Información del Soporte Técnico -->
                         <div class="space-y-4">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detalles de Producción</h3>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detalles de Soporte Técnico</h3>
                             
                             <div class="p-4 bg-slate-900/30 border border-slate-850 rounded-xl space-y-3 text-sm">
                                 <div class="flex justify-between">
-                                    <span class="text-slate-400">Estado de Producción:</span>
+                                    <span class="text-slate-400">Estado del Soporte:</span>
                                     <span class="font-semibold text-white" x-text="detalleOrden?.estado"></span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-slate-400">Diseñador Asignado:</span>
+                                    <span class="text-slate-400">Técnico de Diagnóstico Asignado:</span>
                                     <span class="font-semibold text-slate-200" x-text="detalleOrden?.disenador"></span>
                                 </div>
                                 <div class="flex justify-between">
@@ -475,7 +475,7 @@
                                     <span class="font-mono text-slate-300" x-text="detalleOrden?.fecha_creacion"></span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-slate-400">Tiempo de Producción:</span>
+                                    <span class="text-slate-400">Tiempo de Servicio/Reparación:</span>
                                     <span class="font-semibold text-violet-400 font-mono" x-text="detalleOrden?.duracion"></span>
                                 </div>
                             </div>

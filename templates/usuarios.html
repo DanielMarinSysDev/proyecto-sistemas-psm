@@ -57,10 +57,10 @@
                                     <div class="w-10 h-10 rounded-full flex items-center justify-center text-md font-bold text-white shadow-inner"
                                          :class="{
                                              'bg-violet-600/30 text-violet-300 border border-violet-500/20': u.rol === 'Administrador',
-                                             'bg-blue-600/30 text-blue-300 border border-blue-500/20': u.rol === 'Diseñador',
-                                             'bg-emerald-600/30 text-emerald-300 border border-emerald-500/20': u.rol === 'Ventas / Recepción',
-                                             'bg-orange-600/30 text-orange-300 border border-orange-500/20': u.rol === 'Operador de Producción',
-                                             'bg-amber-600/30 text-amber-300 border border-amber-500/20': u.rol === 'Instaladores / Operaciones de Campo',
+                                             'bg-blue-600/30 text-blue-300 border border-blue-500/20': u.rol === 'Técnico de Diagnóstico',
+                                             'bg-emerald-600/30 text-emerald-300 border border-emerald-500/20': u.rol === 'Recepción / Soporte',
+                                             'bg-orange-600/30 text-orange-300 border border-orange-500/20': u.rol === 'Técnico de Reparación',
+                                             'bg-amber-600/30 text-amber-300 border border-amber-500/20': u.rol === 'Técnico de Campo',
                                              'bg-slate-600/30 text-slate-300 border border-slate-500/20': u.rol === 'Gerencia'
                                          }"
                                          x-text="u.nombre[0].toUpperCase()">
@@ -68,10 +68,10 @@
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
                                           :class="{
                                               'bg-violet-950/60 text-violet-400 border border-violet-800/40': u.rol === 'Administrador',
-                                              'bg-blue-950/60 text-blue-400 border border-blue-800/40': u.rol === 'Diseñador',
-                                              'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40': u.rol === 'Ventas / Recepción',
-                                              'bg-orange-950/60 text-orange-400 border border-orange-800/40': u.rol === 'Operador de Producción',
-                                              'bg-amber-950/60 text-amber-400 border border-amber-800/40': u.rol === 'Instaladores / Operaciones de Campo',
+                                              'bg-blue-950/60 text-blue-400 border border-blue-800/40': u.rol === 'Técnico de Diagnóstico',
+                                              'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40': u.rol === 'Recepción / Soporte',
+                                              'bg-orange-950/60 text-orange-400 border border-orange-800/40': u.rol === 'Técnico de Reparación',
+                                              'bg-amber-950/60 text-amber-400 border border-amber-800/40': u.rol === 'Técnico de Campo',
                                               'bg-slate-900/60 text-slate-400 border border-slate-800': u.rol === 'Gerencia'
                                           }"
                                           x-text="u.rol">
@@ -229,20 +229,20 @@ document.addEventListener('alpine:init', () => {
                 borderClass: 'border-l-2 border-l-violet-500/60'
             },
             {
-                titulo: 'Diseño Gráfico',
-                roles: ['Diseñador'],
+                titulo: 'Diagnóstico Técnico',
+                roles: ['Técnico de Diagnóstico'],
                 colorCirculo: 'bg-blue-500',
                 borderClass: 'border-l-2 border-l-blue-500/60'
             },
             {
-                titulo: 'Ventas y Recepción',
-                roles: ['Ventas / Recepción'],
+                titulo: 'Recepción y Soporte Inicial',
+                roles: ['Recepción / Soporte'],
                 colorCirculo: 'bg-emerald-500',
                 borderClass: 'border-l-2 border-l-emerald-500/60'
             },
             {
-                titulo: 'Producción y Operaciones de Campo',
-                roles: ['Operador de Producción', 'Instaladores / Operaciones de Campo'],
+                titulo: 'Reparación y Campo (Laboratorios)',
+                roles: ['Técnico de Reparación', 'Técnico de Campo'],
                 colorCirculo: 'bg-amber-500',
                 borderClass: 'border-l-2 border-l-amber-500/60'
             }

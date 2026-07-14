@@ -33,7 +33,7 @@
                                 <svg class="w-4 h-4 mr-1.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                                 Ruta
                             </button>
-                            {% if session.get('usuario_rol') in ['Administrador', 'Ventas / Recepción'] %}
+                            {% if session.get('usuario_rol') in ['Administrador', 'Recepción / Soporte'] %}
                             <button @click="abrirModalEditar({ id: {{ cliente.id }}, nombre_empresa: '{{ cliente.nombre_empresa | replace("'", "\\'") }}', contacto_nombre: '{{ cliente.contacto_nombre | replace("'", "\\'") }}', email: '{{ cliente.email | replace("'", "\\'") }}', telefono: '{{ cliente.telefono | replace("'", "\\'") }}' })" class="inline-flex items-center text-xs font-medium bg-amber-900/30 hover:bg-amber-800/50 text-amber-400 px-3 py-1.5 rounded border border-amber-500/30 transition-colors" title="Editar Cliente">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                             </button>

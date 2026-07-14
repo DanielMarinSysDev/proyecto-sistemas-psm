@@ -56,7 +56,7 @@ class ProduccionEventHandler(FileSystemEventHandler):
             hay_pendientes = False
             tag_busca = f"_A{articulo_id}]"
             
-            for m in ['PLOTTER', 'PLOTTER_CORTE', 'IMPRESORA_UV', 'LASER', 'CNC']:
+            for m in ['SOPORTE_TECNICO', 'LABORATORIO_HARDWARE', 'LABORATORIO_SOFTWARE', 'DIAGNOSTICOS', 'CONTROL_CALIDAD', 'PLOTTER', 'PLOTTER_CORTE', 'IMPRESORA_UV', 'LASER', 'CNC']:
                 m_dir = os.path.join(WATCH_DIR, m)
                 for folder in [m_dir, os.path.join(m_dir, "Procesando")]:
                     if os.path.exists(folder):

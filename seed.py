@@ -7,14 +7,14 @@ Session = sessionmaker(bind=engine)
 def seed_users():
     session = Session()
     try:
-        # Parchear enum en Postgres si es necesario
-        try:
-            session.execute(text("ALTER TYPE estadoordenenum ADD VALUE 'CANCELADO'"))
-            session.commit()
-            print("Enum estadoordenenum parcheado con 'CANCELADO'")
-        except Exception as ex:
-            session.rollback()
-            print(f"Aviso al parchear enum (probablemente ya existe o no es PostgreSQL): {ex}")
+        # Parchear enum en Postgres si es necesario (ya ejecutado previamente)
+        # try:
+        #     session.execute(text("ALTER TYPE estadoordenenum ADD VALUE 'CANCELADO'"))
+        #     session.commit()
+        #     print("Enum estadoordenenum parcheado con 'CANCELADO'")
+        # except Exception as ex:
+        #     session.rollback()
+        #     print(f"Aviso al parchear enum (probablemente ya existe o no es PostgreSQL): {ex}")
 
         # Verificar si ya existe el admin
         admin = session.query(Usuario).filter_by(email="admin@taskcore.com").first()
@@ -58,69 +58,38 @@ def seed_prices():
         # Limpiar precios anteriores para sobreescribir con nombres alineados al formulario
         session.query(PrecioMaterial).delete()
         default_prices = [
-            # Sticker
-            PrecioMaterial(tipo_trabajo='Sticker', material='Vinil Brillante', precio_m2=12.0),
-            PrecioMaterial(tipo_trabajo='Sticker', material='Vinil Brillante Blackout', precio_m2=13.0),
-            PrecioMaterial(tipo_trabajo='Sticker', material='Vinil Matte', precio_m2=12.0),
-            PrecioMaterial(tipo_trabajo='Sticker', material='Vinil Matte Blackout', precio_m2=13.0),
-            PrecioMaterial(tipo_trabajo='Sticker', material='Vinil Transparente', precio_m2=14.0),
-            PrecioMaterial(tipo_trabajo='Sticker', material='Vinil Transparente', precio_m2=5.0, es_adicional=True),
-            
-            # Impresión
-            PrecioMaterial(tipo_trabajo='Impresión', material='Vinil Brillante', precio_m2=10.0),
-            PrecioMaterial(tipo_trabajo='Impresión', material='Vinil Brillante Blackout', precio_m2=11.0),
-            PrecioMaterial(tipo_trabajo='Impresión', material='Vinil Matte', precio_m2=10.0),
-            PrecioMaterial(tipo_trabajo='Impresión', material='Vinil Matte Blackout', precio_m2=11.0),
-            PrecioMaterial(tipo_trabajo='Impresión', material='Vinil Transparente', precio_m2=12.0),
-            PrecioMaterial(tipo_trabajo='Impresión', material='Microperforado', precio_m2=15.0),
-            PrecioMaterial(tipo_trabajo='Impresión', material='Vinil Transparente', precio_m2=5.0, es_adicional=True),
-            
-            # Impresión y Corte
-            PrecioMaterial(tipo_trabajo='Impresión y Corte', material='Vinil Brillante', precio_m2=15.0),
-            PrecioMaterial(tipo_trabajo='Impresión y Corte', material='Vinil Matte', precio_m2=15.0),
-            PrecioMaterial(tipo_trabajo='Impresión y Corte', material='Vinil Transparente', precio_m2=17.0),
-            PrecioMaterial(tipo_trabajo='Impresión y Corte', material='Vinil Transparente', precio_m2=5.0, es_adicional=True),
-            
-            # Impresión UV
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='PVC Celular', precio_m2=35.0),
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='Acrílico', precio_m2=65.0),
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='Coroplast', precio_m2=25.0),
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='MDF', precio_m2=30.0),
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='Vidrio', precio_m2=45.0),
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='Lona Banner UV', precio_m2=15.0),
-            PrecioMaterial(tipo_trabajo='Impresión UV', material='Vinil UV', precio_m2=18.0),
+            # Servicios Técnicos - Computadora / Laptop
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Diagnóstico Técnico General', precio_m2=15.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Diagnóstico Express', precio_m2=25.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Mantenimiento Preventivo (Limpieza)', precio_m2=20.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Formateo y Reinstalación de SO', precio_m2=25.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Respaldo de Información (hasta 1TB)', precio_m2=20.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Instalación de SSD + Clonación', precio_m2=45.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Reparación de Placa Madre (Nivel Componente)', precio_m2=75.0),
+            PrecioMaterial(tipo_trabajo='Computadora / Laptop', material='Cambio de Pantalla LCD (Laptop)', precio_m2=90.0),
 
-            # Banner
-            PrecioMaterial(tipo_trabajo='Banner', material='Lona Banner 13oz', precio_m2=10.0),
-            PrecioMaterial(tipo_trabajo='Banner', material='Lona Banner 15oz', precio_m2=12.0),
-            PrecioMaterial(tipo_trabajo='Banner', material='Lona Mesh', precio_m2=14.0),
+            # Servicios Técnicos - Celular / Smartphone
+            PrecioMaterial(tipo_trabajo='Celular / Smartphone', material='Diagnóstico Técnico General', precio_m2=10.0),
+            PrecioMaterial(tipo_trabajo='Celular / Smartphone', material='Cambio de Batería', precio_m2=35.0),
+            PrecioMaterial(tipo_trabajo='Celular / Smartphone', material='Cambio de Pantalla LCD (Móvil)', precio_m2=50.0),
+            PrecioMaterial(tipo_trabajo='Celular / Smartphone', material='Reparación de Puerto de Carga Pin', precio_m2=25.0),
 
-            # Banner Finishes (Mapeados como es_adicional=True)
-            PrecioMaterial(tipo_trabajo='Banner', material='Pendón Armado', precio_m2=2.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Banner', material='Ojetes', precio_m2=1.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Banner', material='Bastidor Madera', precio_m2=12.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Banner', material='Bastidor Metal', precio_m2=20.0, es_adicional=True),
+            # Servicios Técnicos - Tablet
+            PrecioMaterial(tipo_trabajo='Tablet', material='Diagnóstico Técnico General', precio_m2=12.0),
+            PrecioMaterial(tipo_trabajo='Tablet', material='Cambio de Pantalla LCD (Tablet)', precio_m2=60.0),
+            PrecioMaterial(tipo_trabajo='Tablet', material='Cambio de Batería (Tablet)', precio_m2=40.0),
 
-            # Corte Vinil
-            PrecioMaterial(tipo_trabajo='Corte Vinil', material='Vinil Brillante', precio_m2=12.0),
-            PrecioMaterial(tipo_trabajo='Corte Vinil', material='Vinil Brillante Blackout', precio_m2=13.0),
-            PrecioMaterial(tipo_trabajo='Corte Vinil', material='Vinil Matte', precio_m2=12.0),
-            PrecioMaterial(tipo_trabajo='Corte Vinil', material='Vinil Matte Blackout', precio_m2=13.0),
-            PrecioMaterial(tipo_trabajo='Corte Vinil', material='Vinil Transparente', precio_m2=14.0),
+            # Servicios Técnicos - Consola de Videojuegos
+            PrecioMaterial(tipo_trabajo='Consola de Videojuegos', material='Limpieza Física Interna (Consola)', precio_m2=30.0),
+            PrecioMaterial(tipo_trabajo='Consola de Videojuegos', material='Rebalanceo Térmico / Cambio de Pasta', precio_m2=35.0),
 
-            # Corte Acrílico
-            PrecioMaterial(tipo_trabajo='Corte Acrílico', material='Acrílico 3mm', precio_m2=45.0),
-            PrecioMaterial(tipo_trabajo='Corte Acrílico', material='Acrílico 5mm', precio_m2=60.0),
-            PrecioMaterial(tipo_trabajo='Corte Acrílico', material='Acrílico 8mm', precio_m2=80.0),
+            # Servicios Técnicos - Servidor / Redes
+            PrecioMaterial(tipo_trabajo='Servidor / Redes', material='Mantenimiento Físico y Lógico', precio_m2=120.0),
+            PrecioMaterial(tipo_trabajo='Servidor / Redes', material='Configuración de Red / Firewall', precio_m2=80.0),
 
-            # Tablero PVC (Instalación, Mapeado como es_adicional=True)
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='3mm', precio_m2=15.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='6mm', precio_m2=20.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='9mm', precio_m2=25.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='12mm', precio_m2=30.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='15mm', precio_m2=35.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='30mm', precio_m2=50.0, es_adicional=True),
-            PrecioMaterial(tipo_trabajo='Tablero PVC', material='60mm', precio_m2=80.0, es_adicional=True)
+            # Servicios Técnicos - Otro
+            PrecioMaterial(tipo_trabajo='Otro', material='Diagnóstico Técnico General', precio_m2=15.0),
+            PrecioMaterial(tipo_trabajo='Otro', material='Servicio Técnico Técnico Especializado', precio_m2=40.0)
         ]
         session.add_all(default_prices)
         

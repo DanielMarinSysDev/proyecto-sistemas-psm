@@ -286,7 +286,12 @@ def obtener_total_usd(pedido):
 
 def parsear_nombre_proyecto(nombre):
     nombre_limpio = re.sub(r'^\[\d+x\]\s*', '', nombre).strip()
-    tipos_conocidos = ["Sticker", "Impresión y Corte", "Impresión UV", "Impresión", "Banner", "Corte Vinil", "Corte Acrílico", "Corpórea"]
+    tipos_conocidos = [
+        "Computadora / Laptop", "Celular / Smartphone", "Tablet", 
+        "Servidor / Redes", "Consola de Videojuegos", "Otro",
+        "Sticker", "Impresión y Corte", "Impresión UV", "Impresión", 
+        "Banner", "Corte Vinil", "Corte Acrílico", "Corpórea"
+    ]
     tipo_trabajo = "Otro"
     material = "N/A"
     

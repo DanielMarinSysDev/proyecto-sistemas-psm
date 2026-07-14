@@ -19,7 +19,7 @@ def vista_precios():
     try:
         precios = session.query(PrecioMaterial).order_by(PrecioMaterial.tipo_trabajo, PrecioMaterial.material).all()
         # Obtener tipos de trabajo únicos y materiales
-        tipos_trabajo = ["Sticker", "Impresión", "Impresión y Corte", "Impresión UV", "Banner", "Corte Vinil", "Corte Acrílico", "Tablero PVC"]
+        tipos_trabajo = ["Computadora / Laptop", "Celular / Smartphone", "Tablet", "Servidor / Redes", "Consola de Videojuegos", "Otro"]
         return render_template('precios.html', precios=precios, tipos_trabajo=tipos_trabajo)
     except Exception as e:
         return f"Error cargando administración de precios: {e}", 500
@@ -419,7 +419,9 @@ def calcular_precio_interno(session, data):
                 if 0 < area_m2 < 0.05:
                     area_m2 = 0.05
             except ValueError:
-                area_m2 = 0.0
+                area_m2 = 1.0
+        else:
+            area_m2 = 1.0
                 
     # 3. Calcular costo base y laminado
     costo_unitario_base = area_m2 * tarifa.precio_m2
