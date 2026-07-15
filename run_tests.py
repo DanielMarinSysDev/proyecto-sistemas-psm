@@ -172,8 +172,8 @@ class TestSistemaTaskCore(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         self.logout()
 
-    def test_06_regla_sticker_cantidad_y_laminado(self):
-        """Verificar que Stickers fuercen cantidad=1 y agreguen sufijo/prefijo Laminado."""
+    def test_06_creacion_orden_computadora(self):
+        """Verificar la creación correcta de una orden de Computadora con su nombre concatenado."""
         self.login("ventas@taskcore.com", "ventas123")
         
         resp = self.client.post(
@@ -181,19 +181,17 @@ class TestSistemaTaskCore(unittest.TestCase):
             json={
                 'cliente_id': 1,
                 'creador_id': 2,
-                'referencia': 'REF-STICKER-01',
+                'referencia': 'REF-COMP-01',
                 'estado_pago': 'Cancelado',
-                'monto_total': 80.0,
+                'monto_total': 15.0,
                 'moneda': 'USD',
                 'tasa_bcv': 36.5,
                 'articulos': [
                     {
-                        'tipo_trabajo': 'Sticker',
-                        'material': 'Vinil Matte',
-                        'medidas': '4 Metros',
-                        'cantidad': 25, # Debería ser forzado a 1
-                        'laminado': True, # Debería agregar "+ Laminado" y prefijo en especificaciones
-                        'specs': 'Troquelar contorno'
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Diagnóstico Técnico General',
+                        'cantidad': 1,
+                        'specs': 'No enciende la pantalla'
                     }
                 ]
             }
@@ -203,13 +201,13 @@ class TestSistemaTaskCore(unittest.TestCase):
         # Verificar la orden en BD
         db_session = Session()
         try:
-            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Sticker%")).first()
+            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Computadora%")).first()
             self.assertIsNotNone(orden)
             
             # Nombre final del proyecto
-            self.assertEqual(orden.nombre_proyecto, "Sticker - Vinil Matte + Laminado (4 Metros)")
+            self.assertEqual(orden.nombre_proyecto, "Computadora / Laptop - Diagnóstico Técnico General")
             # Especificaciones
-            self.assertTrue(orden.especificaciones.startswith("[REQUIERE LAMINADO]"))
+            self.assertEqual(orden.especificaciones, "No enciende la pantalla")
             
             # Verificar carpetas creadas en disco (Esquema simplificado de 3 carpetas)
             self.assertTrue(os.path.exists(orden.ruta_archivos_transaccionales))
@@ -226,8 +224,8 @@ class TestSistemaTaskCore(unittest.TestCase):
             db_session.close()
         self.logout()
 
-    def test_07_regla_impresion_uv_con_cantidad(self):
-        """Verificar que Impresión UV preserve cantidad y excluya laminado."""
+    def test_07_creacion_orden_celular_cantidad(self):
+        """Verificar que una orden de Celular con cantidad preserve la cantidad en el nombre."""
         self.login("ventas@taskcore.com", "ventas123")
         
         resp = self.client.post(
@@ -235,21 +233,17 @@ class TestSistemaTaskCore(unittest.TestCase):
             json={
                 'cliente_id': 1,
                 'creador_id': 2,
-                'referencia': 'REF-UV-01',
+                'referencia': 'REF-CEL-01',
                 'estado_pago': 'Por Cancelar',
-                'monto_total': 120.0,
+                'monto_total': 70.0,
                 'moneda': 'USD',
                 'tasa_bcv': 36.5,
                 'articulos': [
                     {
-                        'tipo_trabajo': 'Impresión UV',
-                        'material': 'PVC Celular',
-                        'medida_ancho': 1.0,
-                        'medida_alto': 2.0,
-                        'medida_unidad': 'm',
-                        'cantidad': 5, # Debe preservarse
-                        'laminado': True, # Debería ser ignorado o no mostrarse en el nombre ya que es UV
-                        'specs': 'Borde recto'
+                        'tipo_trabajo': 'Celular / Smartphone',
+                        'material': 'Cambio de Batería',
+                        'cantidad': 2,
+                        'specs': 'Baterías infladas'
                     }
                 ]
             }
@@ -259,13 +253,11 @@ class TestSistemaTaskCore(unittest.TestCase):
         # Verificar la orden en BD
         db_session = Session()
         try:
-            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Impresión UV%")).first()
+            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Celular%")).first()
             self.assertIsNotNone(orden)
             
             # Nombre final del proyecto
-            self.assertEqual(orden.nombre_proyecto, "[5x] Impresión UV - PVC Celular (1.0x2.0m)")
-            # Especificaciones
-            self.assertFalse(orden.especificaciones.startswith("[REQUIERE LAMINADO]"))
+            self.assertEqual(orden.nombre_proyecto, "[2x] Celular / Smartphone - Cambio de Batería")
             
         finally:
             db_session.close()
@@ -280,7 +272,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         
         db_session = Session()
         try:
-            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Impresión UV%")).first()
+            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Celular / Smartphone%")).first()
             self.assertIsNotNone(orden)
             
             # Crear archivos mock en la orden antes de aprobarla
@@ -313,11 +305,11 @@ class TestSistemaTaskCore(unittest.TestCase):
             archived_editable = [f for f in client_files if "proyecto_vector.ai" in f]
             self.assertTrue(len(archived_editable) > 0)
             
-            # 2. Verificar vinculación a Hot Folder (Debería ir a IMPRESORA_UV por ser "uv" directly)
-            hot_folder_uv_root = os.path.join(TEST_BASE_DIR, "Cola_Produccion", "IMPRESORA_UV")
-            self.assertTrue(os.path.exists(hot_folder_uv_root))
+            # 2. Verificar vinculación a Hot Folder (Debería ir a LABORATORIO_HARDWARE por ser "batería" en el nombre)
+            hot_folder_root = os.path.join(TEST_BASE_DIR, "Cola_Produccion", "LABORATORIO_HARDWARE")
+            self.assertTrue(os.path.exists(hot_folder_root))
             
-            destino_dir = hot_folder_uv_root
+            destino_dir = hot_folder_root
             self.assertTrue(os.path.exists(destino_dir))
             
             hot_files = os.listdir(destino_dir)
@@ -338,7 +330,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         db_session = Session()
         try:
             # Obtener la orden que sí tiene los archivos mock creados
-            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Impresión UV%")).first()
+            orden = db_session.query(OrdenTrabajo).filter(OrdenTrabajo.nombre_proyecto.like("%Celular / Smartphone%")).first()
             
             # Simular subida de muestra
             data = {
@@ -367,53 +359,32 @@ class TestSistemaTaskCore(unittest.TestCase):
         """Probar el endpoint de cotización en vivo y cálculo dinámico."""
         self.login("ventas@taskcore.com", "ventas123")
         
-        # Test 1: Sticker de 3 metros (Tarifa base $12/m2)
+        # Test 1: Diagnóstico de laptop (Tarifa base $15.0)
         resp = self.client.post(
             '/api/precios/calcular',
             json={
-                'tipo_trabajo': 'Sticker',
-                'material': 'Vinil Brillante',
-                'medidas': '3 Metros',
-                'cantidad': 1,
-                'laminado': False
+                'tipo_trabajo': 'Computadora / Laptop',
+                'material': 'Diagnóstico Técnico General',
+                'cantidad': 1
             }
         )
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
-        self.assertEqual(data["subtotal"], 36.0) # 3m * $12.0
-        self.assertEqual(data["area_m2"], 3.0)
+        self.assertEqual(data["subtotal"], 15.0)
+        self.assertEqual(data["area_m2"], 1.0)
         
-        # Test 2: Sticker con laminado (Base $12 + Laminado $5 = $17)
+        # Test 2: Cambio de batería de celular (Tarifa base $35.0 * 2)
         resp = self.client.post(
             '/api/precios/calcular',
             json={
-                'tipo_trabajo': 'Sticker',
-                'material': 'Vinil Brillante',
-                'medidas': '2 Metros',
-                'cantidad': 1,
-                'laminado': True
+                'tipo_trabajo': 'Celular / Smartphone',
+                'material': 'Cambio de Batería',
+                'cantidad': 2
             }
         )
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
-        self.assertEqual(data["subtotal"], 34.0) # 2m * ($12.0 + $5.0)
-
-        # Test 3: Impresión rectangular de 200cm x 150cm (3 m2, tarifa base $10, cantidad 2)
-        resp = self.client.post(
-            '/api/precios/calcular',
-            json={
-                'tipo_trabajo': 'Impresión',
-                'material': 'Vinil Brillante',
-                'medida_ancho': 200,
-                'medida_alto': 150,
-                'medida_unidad': 'cm',
-                'cantidad': 2,
-                'laminado': False
-            }
-        )
-        self.assertEqual(resp.status_code, 200)
-        data = resp.get_json()
-        self.assertEqual(data["subtotal"], 60.0) # 3m2 * $10.0 * 2 uds
+        self.assertEqual(data["subtotal"], 70.0) # 2 * $35.0
         
         self.logout()
 
@@ -424,8 +395,8 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp = self.client.post(
             '/api/precios',
             json={
-                'tipo_trabajo': 'Impresión',
-                'material': 'Lona Backlight',
+                'tipo_trabajo': 'Computadora / Laptop',
+                'material': 'Limpieza Avanzada',
                 'precio_m2': 20.0
             }
         )
@@ -437,8 +408,8 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp = self.client.post(
             '/api/precios',
             json={
-                'tipo_trabajo': 'Impresión',
-                'material': 'Lona Backlight',
+                'tipo_trabajo': 'Computadora / Laptop',
+                'material': 'Limpieza Avanzada',
                 'precio_m2': 20.0,
                 'precio_laminado_m2': 0.0
             }
@@ -449,7 +420,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         db_session = Session()
         try:
             from database_models import PrecioMaterial
-            tarifa = db_session.query(PrecioMaterial).filter_by(material='Lona Backlight').first()
+            tarifa = db_session.query(PrecioMaterial).filter_by(material='Limpieza Avanzada').first()
             self.assertIsNotNone(tarifa)
             self.assertEqual(tarifa.precio_m2, 20.0)
             
@@ -458,68 +429,34 @@ class TestSistemaTaskCore(unittest.TestCase):
             self.assertEqual(resp.status_code, 200)
             
             # Verificar eliminación
-            tarifa_del = db_session.query(PrecioMaterial).filter_by(material='Lona Backlight').first()
+            tarifa_del = db_session.query(PrecioMaterial).filter_by(material='Limpieza Avanzada').first()
             self.assertIsNone(tarifa_del)
         finally:
             db_session.close()
             
         self.logout()
 
-    def test_12_laminacion_vinil_transparente_y_acabados_banner(self):
-        """
-        Verifica que Vinil Transparente no permita laminado y que los acabados de Banner se cobren correctamente.
-        """
+    def test_12_cotizacion_dispositivo_diferente(self):
+        """Verifica que las cotizaciones para Tablet y Servidores se calculen correctamente."""
         self.login('admin@taskcore.com', 'admin123')
         
-        # 1. Test Vinil Transparente con laminado marcado -> Debe ignorarse el costo de laminado
-        payload_transparente = {
-            "tipo_trabajo": "Impresión",
-            "material": "Vinil Transparente",
-            "medida_ancho": 100, # 1m
-            "medida_alto": 100,  # 1m
-            "medida_unidad": "cm",
-            "cantidad": 1,
-            "laminado": True # Se fuerza a False internamente
-        }
-        resp = self.client.post('/api/precios/calcular', json=payload_transparente)
+        # 1. Test Tablet
+        resp = self.client.post('/api/precios/calcular', json={
+            "tipo_trabajo": "Tablet",
+            "material": "Cambio de Batería (Tablet)",
+            "cantidad": 1
+        })
         self.assertEqual(resp.status_code, 200)
-        data = resp.get_json()
-        # Tarifa base Vinil Transparente es 12.0/m2, laminado es 5.0 (pero no aplica)
-        self.assertEqual(data['subtotal'], 12.0)
-        self.assertEqual(data['precio_laminado_m2'], 0.0)
+        self.assertEqual(resp.get_json()['subtotal'], 40.0)
 
-        # 2. Test Banner con Acabado Bastidor Metal
-        payload_banner_metal = {
-            "tipo_trabajo": "Banner",
-            "material": "Lona Banner 13oz", # $10.0 / m2
-            "medida_ancho": 200, # 2m
-            "medida_alto": 100,  # 1m (Area = 2 m2)
-            "medida_unidad": "cm",
-            "cantidad": 1,
-            "acabado_banner": "Bastidor",
-            "material_bastidor": "Metal" # Surcharge de Bastidor Metal = $20.0 / m2
-        }
-        # Total esperado: (10.0 [Base] + 20.0 [Bastidor Metal]) * 2 m2 * 1 = 60.0
-        resp = self.client.post('/api/precios/calcular', json=payload_banner_metal)
+        # 2. Test Servidor / Redes
+        resp = self.client.post('/api/precios/calcular', json={
+            "tipo_trabajo": "Servidor / Redes",
+            "material": "Configuración de Red / Firewall",
+            "cantidad": 1
+        })
         self.assertEqual(resp.status_code, 200)
-        data = resp.get_json()
-        self.assertEqual(data['subtotal'], 60.0)
-
-        # 3. Test Banner con Acabado Ojetes
-        payload_banner_ojetes = {
-            "tipo_trabajo": "Banner",
-            "material": "Lona Banner 15oz", # $12.0 / m2
-            "medida_ancho": 100,
-            "medida_alto": 100, # Area = 1 m2
-            "medida_unidad": "cm",
-            "cantidad": 2,
-            "acabado_banner": "Ojetes" # Surcharge de Ojetes = $1.0 / m2
-        }
-        # Total esperado: (12.0 [Base] + 1.0 [Ojetes]) * 1 m2 * 2 = 26.0
-        resp = self.client.post('/api/precios/calcular', json=payload_banner_ojetes)
-        self.assertEqual(resp.status_code, 200)
-        data = resp.get_json()
-        self.assertEqual(data['subtotal'], 26.0)
+        self.assertEqual(resp.get_json()['subtotal'], 80.0)
 
         self.logout()
 
@@ -529,14 +466,27 @@ class TestSistemaTaskCore(unittest.TestCase):
         """
         self.login('admin@taskcore.com', 'admin123')
         
-        # Payload de prueba: Impresión Vinil Brillante ($10.0 / m2) con dimensiones que den decimales no enteros
-        # 1.2m * 1.3m = 1.56 m2 * $10.0 = $15.60
-        payload = {
-            "tipo_trabajo": "Impresión",
-            "material": "Vinil Brillante",
-            "medida_ancho": 120,
-            "medida_alto": 130,
-            "medida_unidad": "cm",
+        # Crear tarifas de prueba decimales
+        self.client.post(
+            '/api/precios',
+            json={
+                'tipo_trabajo': 'Computadora / Laptop',
+                'material': 'Servicio Test Redondeo 1',
+                'precio_m2': 15.60
+            }
+        )
+        self.client.post(
+            '/api/precios',
+            json={
+                'tipo_trabajo': 'Computadora / Laptop',
+                'material': 'Servicio Test Redondeo 2',
+                'precio_m2': 16.64
+            }
+        )
+        
+        payload_1 = {
+            "tipo_trabajo": "Computadora / Laptop",
+            "material": "Servicio Test Redondeo 1",
             "cantidad": 1
         }
         
@@ -544,30 +494,27 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp_set = self.client.post('/api/configuracion/redondeo', json={"valor": "exacto"})
         self.assertEqual(resp_set.status_code, 200)
         
-        resp_calc = self.client.post('/api/precios/calcular', json=payload)
+        resp_calc = self.client.post('/api/precios/calcular', json=payload_1)
         self.assertEqual(resp_calc.get_json()['subtotal'], 15.60)
         
         # 2. Redondeo: Entero Superior (Ceil)
         resp_set = self.client.post('/api/configuracion/redondeo', json={"valor": "entero_superior"})
         self.assertEqual(resp_set.status_code, 200)
         
-        resp_calc = self.client.post('/api/precios/calcular', json=payload)
+        resp_calc = self.client.post('/api/precios/calcular', json=payload_1)
         self.assertEqual(resp_calc.get_json()['subtotal'], 16.00)
         
         # 3. Redondeo: Decimal más cercano (.50)
         resp_set = self.client.post('/api/configuracion/redondeo', json={"valor": "decimal_cercano"})
         self.assertEqual(resp_set.status_code, 200)
         
-        resp_calc = self.client.post('/api/precios/calcular', json=payload)
+        resp_calc = self.client.post('/api/precios/calcular', json=payload_1)
         self.assertEqual(resp_calc.get_json()['subtotal'], 15.50)
         
-        # Probar otro valor: 1.28m * 1.3m = 1.664 * $10 = $16.64 -> redondeo a 16.50
+        # Probar otro valor: $16.64 -> redondeo a 16.50
         payload_2 = {
-            "tipo_trabajo": "Impresión",
-            "material": "Vinil Brillante",
-            "medida_ancho": 128,
-            "medida_alto": 130,
-            "medida_unidad": "cm",
+            "tipo_trabajo": "Computadora / Laptop",
+            "material": "Servicio Test Redondeo 2",
             "cantidad": 1
         }
         resp_calc = self.client.post('/api/precios/calcular', json=payload_2)
@@ -575,6 +522,16 @@ class TestSistemaTaskCore(unittest.TestCase):
         
         # Restaurar a exacto
         self.client.post('/api/configuracion/redondeo', json={"valor": "exacto"})
+        
+        # Limpiar BD
+        db_session = Session()
+        try:
+            from database_models import PrecioMaterial
+            db_session.query(PrecioMaterial).filter(PrecioMaterial.material.like("Servicio Test Redondeo%")).delete(synchronize_session=False)
+            db_session.commit()
+        finally:
+            db_session.close()
+            
         self.logout()
 
     def test_19_configuracion_intervalo_recordatorio(self):
@@ -609,29 +566,23 @@ class TestSistemaTaskCore(unittest.TestCase):
         
         self.logout()
 
-    def test_20_precio_minimo_area_pequena(self):
+    def test_20_calculo_sin_dimensiones_default_area(self):
         """
-        Prueba que las dimensiones muy pequeñas apliquen un área mínima de 0.05 m2.
+        Prueba que si no se pasan dimensiones, el área m2 por defecto sea 1.0.
         """
         self.login('admin@taskcore.com', 'admin123')
         
-        # 5cm x 5cm de Vinil Brillante (tarifa = $10/m2)
         payload = {
-            "tipo_trabajo": "Impresión",
-            "material": "Vinil Brillante",
-            "medida_ancho": 5,
-            "medida_alto": 5,
-            "medida_unidad": "cm",
+            "tipo_trabajo": "Computadora / Laptop",
+            "material": "Diagnóstico Técnico General",
             "cantidad": 1
         }
         resp = self.client.post('/api/precios/calcular', json=payload)
         self.assertEqual(resp.status_code, 200)
         
         data = resp.get_json()
-        # El área m2 debe ser forzada a 0.05
-        self.assertEqual(data['area_m2'], 0.05)
-        # El subtotal debe ser 0.05 * $10 = $0.50
-        self.assertEqual(data['subtotal'], 0.50)
+        self.assertEqual(data['area_m2'], 1.0)
+        self.assertEqual(data['subtotal'], 15.0)
         
         self.logout()
 
@@ -714,7 +665,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         resp = self.client.post('/api/ordenes/1/incidencias', json={
             "usuario_id": 1,
             "tipo_problema": "Falta Material",
-            "detalles": "No queda vinil mate en stock para esta impresión."
+            "detalles": "No queda pasta térmica en stock para este mantenimiento."
         })
         self.assertEqual(resp.status_code, 201)
         data = resp.get_json()
@@ -759,10 +710,8 @@ class TestSistemaTaskCore(unittest.TestCase):
                 'tasa_bcv': 36.5,
                 'articulos': [
                     {
-                        'tipo_trabajo': 'Impresión',
-                        'material': 'Vinil Brillante',
-                        'medida_ancho': 1.0,
-                        'medida_alto': 1.0,
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Diagnóstico Técnico General',
                         'cantidad': 1,
                         'specs': 'Prueba sin costo'
                     }
@@ -786,10 +735,8 @@ class TestSistemaTaskCore(unittest.TestCase):
                 'motivo_sin_costo': 'Garantía por error previo',
                 'articulos': [
                     {
-                        'tipo_trabajo': 'Impresión',
-                        'material': 'Vinil Brillante',
-                        'medida_ancho': 1.0,
-                        'medida_alto': 1.0,
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Diagnóstico Técnico General',
                         'cantidad': 1,
                         'specs': 'Prueba sin costo con motivo'
                     }
@@ -805,24 +752,20 @@ class TestSistemaTaskCore(unittest.TestCase):
         """
         self.login('admin@taskcore.com', 'admin123')
         
-        # 1. Configurar precio mínimo a $3.50
-        resp_set = self.client.post('/api/configuracion/precio_minimo', json={"valor": "3.50"})
+        # 1. Configurar precio mínimo a $12.00 (Diagnóstico Celular base es $10.00)
+        resp_set = self.client.post('/api/configuracion/precio_minimo', json={"valor": "12.00"})
         self.assertEqual(resp_set.status_code, 200)
         
-        # 2. Calcular precio de algo muy pequeño (por ejemplo, 10cm x 10cm = 0.01 m2 -> área min es 0.05 m2 -> 0.05 * $10 = $0.50)
-        # Como es menor a $3.50, debe forzarse el costo unitario a $3.50. Con cantidad=2, el total debe ser $7.00.
+        # 2. Calcular precio (base $10.00 < $12.00, con cantidad=2, el total debe ser $24.00)
         payload = {
-            "tipo_trabajo": "Impresión",
-            "material": "Vinil Brillante",
-            "medida_ancho": 10,
-            "medida_alto": 10,
-            "medida_unidad": "cm",
+            "tipo_trabajo": "Celular / Smartphone",
+            "material": "Diagnóstico Técnico General",
             "cantidad": 2
         }
         resp_calc = self.client.post('/api/precios/calcular', json=payload)
         self.assertEqual(resp_calc.status_code, 200)
         data = resp_calc.get_json()
-        self.assertEqual(data['subtotal'], 7.00) # $3.50 * 2
+        self.assertEqual(data['subtotal'], 24.00) # $12.00 * 2
         
         # 3. Restaurar precio mínimo por defecto ($1.00)
         self.client.post('/api/configuracion/precio_minimo', json={"valor": "1.00"})
@@ -845,10 +788,8 @@ class TestSistemaTaskCore(unittest.TestCase):
                 'ocultar_precio_ventas': True, # Debe ser ignorado (forzado a False)
                 'articulos': [
                     {
-                        'tipo_trabajo': 'Impresión',
-                        'material': 'Vinil Brillante',
-                        'medida_ancho': 1.0,
-                        'medida_alto': 1.0,
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Diagnóstico Técnico General',
                         'cantidad': 1,
                         'specs': 'Prueba seguridad'
                     }
@@ -871,7 +812,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         # Primero reportamos una incidencia como Ventas
         resp_inc = self.client.post('/api/ordenes/1/incidencias', json={
             "usuario_id": 2,
-            "tipo_problema": "Error de Diseño",
+            "tipo_problema": "Fallo de Repuesto",
             "detalles": "Test seguridad"
         })
         self.assertEqual(resp_inc.status_code, 201)

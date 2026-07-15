@@ -83,25 +83,46 @@ html:not(.dark) {
 
 /* --- Sobrescribir clases utilitarias de Tailwind para asegurar contraste y legibilidad --- */
 
-/* Asegurar contraste correcto en modo oscuro (por defecto o con clase .dark) */
+/* Asegurar contraste correcto en modo oscuro (con clase .dark) */
+html.dark .text-slate-200,
 html.dark .text-slate-300,
-:root .text-slate-300 {
+html.dark .text-slate-700,
+html.dark .text-slate-800,
+html.dark .text-slate-900 {
     color: #cbd5e1 !important; /* Gris claro legible */
 }
 html.dark .text-slate-400,
-:root .text-slate-400 {
+html.dark .text-slate-500 {
     color: #94a3b8 !important; /* Gris medio legible */
+}
+html.dark .text-slate-600 {
+    color: #64748b !important; /* Gris apagado legible */
 }
 
 /* Asegurar contraste correcto en modo claro */
+html:not(.dark) .text-slate-200 {
+    color: var(--slate-200) !important; /* Negro */
+}
 html:not(.dark) .text-slate-300 {
     color: var(--slate-400) !important;
 }
 html:not(.dark) .text-slate-400 {
     color: var(--slate-500) !important;
 }
-html:not(.dark) .text-slate-200 {
-    color: var(--slate-200) !important;
+html:not(.dark) .text-slate-500 {
+    color: #64748b !important;
+}
+html:not(.dark) .text-slate-600 {
+    color: #475569 !important;
+}
+html:not(.dark) .text-slate-700 {
+    color: #334155 !important;
+}
+html:not(.dark) .text-slate-800 {
+    color: #1e293b !important;
+}
+html:not(.dark) .text-slate-900 {
+    color: #0f172a !important;
 }
 html:not(.dark) .border-slate-800 {
     border-color: var(--slate-300) !important;

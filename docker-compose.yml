@@ -47,5 +47,6 @@ services:
       - ./utils_bcv.py:/app/utils_bcv.py
       - ./respaldar_db.py:/app/respaldar_db.py
       - ./restaurar_db.py:/app/restaurar_db.py
+      - ./respaldos:/app/respaldos
     extra_hosts:
       - "host.docker.internal:host-gateway"
