@@ -17,14 +17,47 @@ def restaurar_archivo(nombre_archivo):
     if not carpeta_respaldos:
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
         carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
+    
+    carpeta_respaldos = os.path.abspath(carpeta_respaldos)
 
     if os.path.isabs(nombre_archivo):
-        ruta_seleccionada = nombre_archivo
+        ruta_seleccionada = os.path.abspath(nombre_archivo)
     else:
-        ruta_seleccionada = os.path.join(carpeta_respaldos, nombre_archivo)
+        ruta_seleccionada = os.path.abspath(os.path.join(carpeta_respaldos, nombre_archivo))
 
     if not os.path.exists(ruta_seleccionada):
         return False, f"El archivo de respaldo no existe: {ruta_seleccionada}"
+
+    # VALIDAR FIRMA DE AUTENTICIDAD/INTEGRIDAD (Sello Criptográfico)
+    import hmac
+    import hashlib
+    
+    secret_key = os.getenv("SECRET_KEY", "dev_key_temporal_secreta_12345")
+    
+    try:
+        with open(ruta_seleccionada, "r", encoding="utf-8", errors="ignore") as sf:
+            lineas = sf.readlines()
+    except Exception as e:
+        return False, f"No se pudo leer el archivo para verificar el sello: {str(e)}"
+        
+    if not lineas:
+        return False, "El archivo de respaldo está vacío."
+        
+    # Buscar si la última línea contiene la firma
+    ultima_linea = lineas[-1].strip()
+    if not ultima_linea.startswith("-- FIRMA_AUTENTICIDAD_TASKCORE:"):
+        return False, "Error de Seguridad: El archivo no contiene un sello dinámico de autenticidad válido."
+        
+    firma_guardada = ultima_linea.replace("-- FIRMA_AUTENTICIDAD_TASKCORE:", "").strip()
+    
+    # El contenido original es todo excepto la última línea
+    contenido_original = "".join(lineas[:-1]).encode('utf-8')
+    
+    # Calcular firma esperada
+    firma_esperada = hmac.new(secret_key.encode('utf-8'), contenido_original, hashlib.sha256).hexdigest()
+    
+    if not hmac.compare_digest(firma_guardada, firma_esperada):
+        return False, "Error de Seguridad: El sello dinámico no coincide. El archivo ha sido manipulado o proviene de otro sistema."
 
     db_container = os.getenv("DB_CONTAINER", "taskcore_db")
     db_user = os.getenv("DB_USER", "taskcore_user")
@@ -40,6 +73,8 @@ def restaurar_archivo(nombre_archivo):
         if os.getenv("DB_PASSWORD"):
             env_cmd["PGPASSWORD"] = os.getenv("DB_PASSWORD")
 
+        # Restaurar enviando solo el contenido original (sin la línea del sello para evitar comentarios basura al final)
+        # o enviando todo el archivo ya que el comentario no afecta a psql. Usar el archivo completo es más directo y seguro
         with open(ruta_seleccionada, "r", encoding="utf-8") as f:
             subprocess.run(comando, stdin=f, env=env_cmd, check=True)
         return True, "Base de datos restaurada con éxito."

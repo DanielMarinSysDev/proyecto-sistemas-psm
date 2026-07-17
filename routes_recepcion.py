@@ -40,7 +40,7 @@ def crear_orden_trabajo():
         return jsonify({"error": "No se enviaron datos"}), 400
         
     cliente_id = data.get('cliente_id')
-    creador_id = data.get('creador_id')
+    creador_id = flask_session.get('usuario_id') or data.get('creador_id') or 1
     referencia = data.get('referencia', '')
     articulos = data.get('articulos', [])
     es_borrador = data.get('es_borrador', False)
@@ -281,7 +281,7 @@ def crear_orden_trabajo():
                         dest_dir = rutas_articulos[idx]
                         
                         # Copiar subcarpetas
-                        for sub in ['Editable', 'Salida_Impresion', 'Muestras']:
+                        for sub in ['Diagnostico_Firmware', 'Entregables_Reportes', 'Evidencia_Fotos']:
                             sub_orig = os.path.join(orig_dir, sub)
                             sub_dest = os.path.join(dest_dir, sub)
                             if os.path.exists(sub_orig):
@@ -415,7 +415,7 @@ def actualizar_estado_orden(orden_id):
         return jsonify({"error": "No se enviaron datos"}), 400
         
     nuevo_estado_str = data.get('nuevo_estado')
-    usuario_id = data.get('usuario_id')
+    usuario_id = flask_session.get('usuario_id') or data.get('usuario_id') or 1
     
     if not nuevo_estado_str or not usuario_id:
         return jsonify({"error": "Faltan campos: nuevo_estado, usuario_id"}), 400
@@ -1044,8 +1044,8 @@ def repetir_articulo_orden(articulo_id):
             orig_dir = orden_original.ruta_archivos_transaccionales
             dest_dir = nueva_ruta_articulo
             
-            # Copiar archivos de 'Editable', 'Salida_Impresion', 'Muestras'
-            subcarpetas = ['Editable', 'Salida_Impresion', 'Muestras']
+            # Copiar archivos de 'Diagnostico_Firmware', 'Entregables_Reportes', 'Evidencia_Fotos'
+            subcarpetas = ['Diagnostico_Firmware', 'Entregables_Reportes', 'Evidencia_Fotos']
             for sub in subcarpetas:
                 sub_orig = os.path.join(orig_dir, sub)
                 sub_dest = os.path.join(dest_dir, sub)
@@ -1234,8 +1234,8 @@ def cancelar_orden(orden_id):
         # Eliminar archivos de la cola de producción (Hot Folder) si estaban enlazados
         import os
         from file_manager import BASE_DIR
-        cola_dir = os.path.join(BASE_DIR, "Cola_Produccion")
-        maquinas = ['PLOTTER', 'PLOTTER_CORTE', 'IMPRESORA_UV', 'LASER', 'CNC']
+        cola_dir = os.path.join(BASE_DIR, "Cola_Soporte")
+        maquinas = ['SOPORTE_TECNICO', 'LABORATORIO_HARDWARE', 'LABORATORIO_SOFTWARE', 'DIAGNOSTICOS', 'CONTROL_CALIDAD']
         patron = f"[P{orden.pedido_id}_A{orden.id}]"
         
         archivos_eliminados = []

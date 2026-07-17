@@ -50,11 +50,29 @@ def realizar_respaldo():
         with open(archivo_salida, "w", encoding="utf-8") as f:
             subprocess.run(comando, stdout=f, env=env_cmd, check=True)
             
+        # Agregar sello/firma criptográfica al final del archivo para validar su autenticidad
+        import hmac
+        import hashlib
+        
+        secret_key = os.getenv("SECRET_KEY", "dev_key_temporal_secreta_12345")
+        
+        # Leer el contenido recién creado en binario
+        with open(archivo_salida, "rb") as f_read:
+            contenido = f_read.read()
+            
+        # Calcular firma HMAC-SHA256
+        firma = hmac.new(secret_key.encode('utf-8'), contenido, hashlib.sha256).hexdigest()
+        
+        # Añadir la firma como comentario SQL al final del archivo
+        with open(archivo_salida, "a", encoding="utf-8") as f_append:
+            f_append.write(f"\n-- FIRMA_AUTENTICIDAD_TASKCORE:{firma}\n")
+
         print(f"\n====================================================")
         print(f"[OK] Respaldo de Base de Datos Creado Exitosamente")
         print(f"====================================================")
         print(f" Archivo: {nombre_archivo}")
         print(f" Ruta:    {archivo_salida}")
+        print(f" Sello:   {firma[:10]}... (Verificado)")
         print(f"====================================================\n")
         
         return True, archivo_salida

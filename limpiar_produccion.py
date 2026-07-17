@@ -90,22 +90,22 @@ def limpiar_archivos_fisicos():
     vaciar_carpeta(clientes_master)
     print("✓ Clientes_Master vaciado (conservando directorio raíz).")
     
-    # 2. Limpiar Produccion_Grafica (carpetas de pedidos y archivos de diseño)
-    produccion_grafica = os.path.join(BASE_DIR, "Produccion_Grafica")
-    vaciar_carpeta(produccion_grafica)
-    print("✓ Produccion_Grafica vaciado (conservando directorio raíz).")
+    # 2. Limpiar Servicios_Soporte (carpetas de pedidos y archivos de soporte)
+    servicios_soporte = os.path.join(BASE_DIR, "Servicios_Soporte")
+    vaciar_carpeta(servicios_soporte)
+    print("✓ Servicios_Soporte vaciado (conservando directorio raíz).")
     
-    # 3. Limpiar Cola_Produccion de todas las máquinas sin romper la estructura del flujo
-    cola_produccion = os.path.join(BASE_DIR, "Cola_Produccion")
-    if os.path.exists(cola_produccion):
+    # 3. Limpiar Cola_Soporte de todas las estaciones sin romper la estructura del flujo
+    cola_soporte = os.path.join(BASE_DIR, "Cola_Soporte")
+    if os.path.exists(cola_soporte):
         # Vaciar Historial
-        historial_dir = os.path.join(cola_produccion, "Historial")
+        historial_dir = os.path.join(cola_soporte, "Historial")
         vaciar_carpeta(historial_dir)
         
-        # Vaciar colas de máquinas
-        maquinas = ['PLOTTER', 'PLOTTER_CORTE', 'IMPRESORA_UV', 'LASER', 'CNC']
+        # Vaciar colas de estaciones
+        maquinas = ['SOPORTE_TECNICO', 'LABORATORIO_HARDWARE', 'LABORATORIO_SOFTWARE', 'DIAGNOSTICOS', 'CONTROL_CALIDAD']
         for m in maquinas:
-            m_dir = os.path.join(cola_produccion, m)
+            m_dir = os.path.join(cola_soporte, m)
             if os.path.exists(m_dir):
                 # Eliminar archivos sueltos en la raíz de la máquina
                 for item in os.listdir(m_dir):
@@ -134,7 +134,7 @@ def limpiar_archivos_fisicos():
                                 os.unlink(item_path)
                             elif os.path.isdir(item_path):
                                 shutil.rmtree(item_path)
-        print("✓ Colas de Producción de máquinas limpiadas y estructuradas.")
+        print("✓ Colas de Soporte de estaciones limpiadas y estructuradas.")
 
 if __name__ == "__main__":
     print("====================================================")

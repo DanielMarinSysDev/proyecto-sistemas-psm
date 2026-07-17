@@ -759,7 +759,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             cliente_id: this.ordenForm.cliente_id,
-                            creador_id: 1, // HARDCODED for now
+                            creador_id: {{ session.get('usuario_id', 1) }},
                             referencia: this.ordenForm.referencia,
                             monto_total: this.ordenForm.monto_total ? parseFloat(this.ordenForm.monto_total) : null,
                             moneda: this.ordenForm.moneda,

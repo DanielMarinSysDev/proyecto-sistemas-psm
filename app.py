@@ -52,6 +52,14 @@ def index():
 def vista_login():
     return render_template('login.html')
 
+@app.route('/health')
+def health_check():
+    """
+    Ruta pública simple para mantener activo el servicio en Render (Keep-Alive)
+    y para monitorear el estado básico de la aplicación.
+    """
+    return {"status": "healthy", "service": "TaskCore"}, 200
+
 
 if __name__ == '__main__':
     # Asegurar e inicializar estructura de carpetas

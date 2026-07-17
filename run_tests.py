@@ -211,9 +211,9 @@ class TestSistemaTaskCore(unittest.TestCase):
             
             # Verificar carpetas creadas en disco (Esquema simplificado de 3 carpetas)
             self.assertTrue(os.path.exists(orden.ruta_archivos_transaccionales))
-            self.assertTrue(os.path.exists(os.path.join(orden.ruta_archivos_transaccionales, "Editable")))
-            self.assertTrue(os.path.exists(os.path.join(orden.ruta_archivos_transaccionales, "Salida_Impresion")))
-            self.assertTrue(os.path.exists(os.path.join(orden.ruta_archivos_transaccionales, "Muestras")))
+            self.assertTrue(os.path.exists(os.path.join(orden.ruta_archivos_transaccionales, "Diagnostico_Firmware")))
+            self.assertTrue(os.path.exists(os.path.join(orden.ruta_archivos_transaccionales, "Entregables_Reportes")))
+            self.assertTrue(os.path.exists(os.path.join(orden.ruta_archivos_transaccionales, "Evidencia_Fotos")))
             
             # El symlink directo debe estar en la raíz de la carpeta del artículo
             symlink_txt = os.path.join(orden.ruta_archivos_transaccionales, "LEER_Activos_Permanentes.txt")
@@ -276,8 +276,8 @@ class TestSistemaTaskCore(unittest.TestCase):
             self.assertIsNotNone(orden)
             
             # Crear archivos mock en la orden antes de aprobarla
-            editable_dir = os.path.join(orden.ruta_archivos_transaccionales, "Editable")
-            salida_dir = os.path.join(orden.ruta_archivos_transaccionales, "Salida_Impresion")
+            editable_dir = os.path.join(orden.ruta_archivos_transaccionales, "Diagnostico_Firmware")
+            salida_dir = os.path.join(orden.ruta_archivos_transaccionales, "Entregables_Reportes")
             
             mock_editable = os.path.join(editable_dir, "proyecto_vector.ai")
             mock_salida = os.path.join(salida_dir, "impresion_final.pdf")
@@ -306,7 +306,7 @@ class TestSistemaTaskCore(unittest.TestCase):
             self.assertTrue(len(archived_editable) > 0)
             
             # 2. Verificar vinculación a Hot Folder (Debería ir a LABORATORIO_HARDWARE por ser "batería" en el nombre)
-            hot_folder_root = os.path.join(TEST_BASE_DIR, "Cola_Produccion", "LABORATORIO_HARDWARE")
+            hot_folder_root = os.path.join(TEST_BASE_DIR, "Cola_Soporte", "LABORATORIO_HARDWARE")
             self.assertTrue(os.path.exists(hot_folder_root))
             
             destino_dir = hot_folder_root
@@ -334,7 +334,7 @@ class TestSistemaTaskCore(unittest.TestCase):
             
             # Simular subida de muestra
             data = {
-                'file': (open(os.path.join(orden.ruta_archivos_transaccionales, "Editable", "proyecto_vector.ai"), 'rb'), 'test_image.jpg')
+                'file': (open(os.path.join(orden.ruta_archivos_transaccionales, "Diagnostico_Firmware", "proyecto_vector.ai"), 'rb'), 'test_image.jpg')
             }
             
             resp = self.client.post(
@@ -345,7 +345,7 @@ class TestSistemaTaskCore(unittest.TestCase):
             self.assertEqual(resp.status_code, 200)
             
             # Verificar que el archivo se guardó físicamente en la subcarpeta "Muestras"
-            muestras_dir = os.path.join(orden.ruta_archivos_transaccionales, "Muestras")
+            muestras_dir = os.path.join(orden.ruta_archivos_transaccionales, "Evidencia_Fotos")
             self.assertTrue(os.path.exists(os.path.join(muestras_dir, "test_image.jpg")))
             
         finally:
@@ -928,6 +928,85 @@ class TestSistemaTaskCore(unittest.TestCase):
         self.login("ventas@taskcore.com", "ventas123")
         resp_vista = self.client.get('/usuarios')
         self.assertEqual(resp_vista.status_code, 403)
+        self.logout()
+
+    def test_25_seguridad_respaldos_y_mantenimiento(self):
+        """
+        Prueba la seguridad y validación de credenciales para la descarga y restauración de respaldos.
+        """
+        # 1. Acceso anónimo
+        resp = self.client.post('/api/mantenimiento/restaurar', json={"filename": "test.sql", "password": "123"})
+        self.assertIn(resp.status_code, [302, 401])
+
+        # 2. Acceso como Recepción/Soporte (No Admin)
+        self.login("ventas@taskcore.com", "ventas123")
+        resp = self.client.post('/api/mantenimiento/restaurar', json={"filename": "test.sql", "password": "123"})
+        self.assertEqual(resp.status_code, 403)
+        self.logout()
+
+        # 3. Acceso como Administrador
+        self.login("admin@taskcore.com", "admin123")
+
+        # 3a. Restaurar sin contraseña
+        resp = self.client.post('/api/mantenimiento/restaurar', json={"filename": "test.sql"})
+        self.assertEqual(resp.status_code, 401)
+
+        # 3b. Restaurar con contraseña incorrecta
+        resp = self.client.post('/api/mantenimiento/restaurar', json={"filename": "test.sql", "password": "wrongpassword"})
+        self.assertEqual(resp.status_code, 401)
+
+        # 3c. Descargar sin contraseña
+        resp = self.client.post('/api/mantenimiento/respaldos/test.sql/descargar', json={})
+        self.assertEqual(resp.status_code, 401)
+
+        # 3d. Descargar con contraseña incorrecta
+        resp = self.client.post('/api/mantenimiento/respaldos/test.sql/descargar', json={"password": "wrongpassword"})
+        self.assertEqual(resp.status_code, 401)
+
+        # 3e. Subir y restaurar sin contraseña
+        resp = self.client.post('/api/mantenimiento/subir-restaurar', data={})
+        self.assertEqual(resp.status_code, 401)
+
+        # 3f. Subir y restaurar con contraseña incorrecta
+        import io
+        resp = self.client.post('/api/mantenimiento/subir-restaurar', data={
+            "password": "wrongpassword",
+            "file": (io.BytesIO(b"CREATE TABLE test;"), "test.sql")
+        })
+        self.assertEqual(resp.status_code, 401)
+
+        # 3g. Subir y restaurar con contraseña correcta pero sin sello
+        resp = self.client.post('/api/mantenimiento/subir-restaurar', data={
+            "password": "admin123",
+            "file": (io.BytesIO(b"CREATE TABLE test;"), "test.sql")
+        })
+        self.assertEqual(resp.status_code, 500)
+        self.assertIn("no contiene un sello dinámico", resp.json.get("error", ""))
+
+        # 3h. Subir y restaurar con contraseña correcta y sello modificado/incorrecto
+        resp = self.client.post('/api/mantenimiento/subir-restaurar', data={
+            "password": "admin123",
+            "file": (io.BytesIO(b"CREATE TABLE test;\n-- FIRMA_AUTENTICIDAD_TASKCORE:wronghash"), "test.sql")
+        })
+        self.assertEqual(resp.status_code, 500)
+        self.assertIn("El sello dinámico no coincide", resp.json.get("error", ""))
+
+        # 3i. Subir y restaurar con contraseña correcta y sello correcto (docker no presente en test)
+        import hmac
+        import hashlib
+        content = b"CREATE TABLE test;\n"
+        # Obtener el SECRET_KEY igual a como lo hace restaurar_db.py
+        secret_key_val = os.getenv("SECRET_KEY", "dev_key_temporal_secreta_12345")
+        firma = hmac.new(secret_key_val.encode('utf-8'), content, hashlib.sha256).hexdigest()
+        signed_file = content + f"-- FIRMA_AUTENTICIDAD_TASKCORE:{firma}\n".encode('utf-8')
+        
+        resp = self.client.post('/api/mantenimiento/subir-restaurar', data={
+            "password": "admin123",
+            "file": (io.BytesIO(signed_file), "test.sql")
+        })
+        self.assertEqual(resp.status_code, 500)
+        self.assertNotIn("Error de Seguridad:", resp.json.get("error", ""))
+
         self.logout()
 
 if __name__ == '__main__':

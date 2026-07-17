@@ -192,6 +192,8 @@ def vista_dashboard():
                 "estado": o.estado.value,
                 "fecha": o.fecha_creacion.strftime("%Y-%m-%d"),
                 "ruta": o.ruta_archivos_transaccionales,
+                "ruta_muestra": o.ruta_muestra,
+                "ruta_instalacion": o.ruta_instalacion,
                 "pedido_id": o.pedido_id,
                 "disenador_id": o.disenador_id,
                 "disenador_nombre": o.disenador.nombre if o.disenador else "Sin asignar",
@@ -259,6 +261,8 @@ def buscar_ordenes():
         session.close()
 
 import os
+import requests
+import mimetypes
 from werkzeug.utils import secure_filename
 from database_models import LogAuditoria
 
@@ -266,6 +270,37 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_to_supabase_storage(file_stream, filename, target_path, bucket_name="archivos", content_type=None):
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    
+    if not supabase_url or not supabase_key:
+        return None
+        
+    supabase_url = supabase_url.rstrip("/")
+    upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{target_path}"
+    
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "x-upsert": "true"
+    }
+    if content_type:
+        headers["Content-Type"] = content_type
+        
+    file_stream.seek(0)
+    file_data = file_stream.read()
+    
+    response = requests.post(upload_url, headers=headers, data=file_data)
+    if response.status_code == 200:
+        return f"{supabase_url}/storage/v1/object/public/{bucket_name}/{target_path}"
+        
+    put_response = requests.put(upload_url, headers=headers, data=file_data)
+    if put_response.status_code == 200:
+        return f"{supabase_url}/storage/v1/object/public/{bucket_name}/{target_path}"
+        
+    raise Exception(f"Fallo al subir a Supabase: {put_response.text}")
 
 @dashboard_bp.route('/api/ordenes/<int:orden_id>/upload-<tipo>', methods=['POST'])
 @login_required
@@ -296,13 +331,25 @@ def upload_archivo(orden_id, tipo):
         filename = secure_filename(file.filename)
         
         # Determinar la subcarpeta
-        folder_name = "Muestras"
+        folder_name = "Evidencia_Fotos"
         
-        target_dir = os.path.join(orden.ruta_archivos_transaccionales, folder_name)
-        os.makedirs(target_dir, exist_ok=True)
+        # Intentar subir a Supabase Storage si están las credenciales
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_key = os.environ.get("SUPABASE_KEY")
         
-        file_path = os.path.join(target_dir, filename)
-        file.save(file_path)
+        if supabase_url and supabase_key:
+            content_type, _ = mimetypes.guess_type(filename)
+            target_path = f"orden_{orden.id}/{folder_name}/{filename}"
+            try:
+                file_path = upload_to_supabase_storage(file, filename, target_path, "archivos", content_type)
+            except Exception as se:
+                return jsonify({"error": f"Error subiendo a Supabase Storage: {se}"}), 500
+        else:
+            # Flujo local en disco
+            target_dir = os.path.join(orden.ruta_archivos_transaccionales, folder_name)
+            os.makedirs(target_dir, exist_ok=True)
+            file_path = os.path.join(target_dir, filename)
+            file.save(file_path)
         
         # Actualizar DB
         if tipo == 'muestra':
@@ -331,6 +378,45 @@ def upload_archivo(orden_id, tipo):
         
     except Exception as e:
         session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+@dashboard_bp.route('/api/ordenes/<int:orden_id>/descargar/<tipo>', methods=['GET'])
+@login_required
+def descargar_archivo_orden(orden_id, tipo):
+    """
+    Descarga o redirecciona al archivo (muestra o instalacion) de la orden.
+    tipo debe ser 'muestra' o 'instalacion'.
+    """
+    if tipo not in ['muestra', 'instalacion']:
+        return jsonify({"error": "Tipo de archivo inválido"}), 400
+        
+    session = Session()
+    try:
+        orden = session.query(OrdenTrabajo).filter(OrdenTrabajo.id == orden_id).first()
+        if not orden:
+            return jsonify({"error": "Orden no encontrada"}), 404
+            
+        file_path = orden.ruta_muestra if tipo == 'muestra' else orden.ruta_instalacion
+        if not file_path:
+            return jsonify({"error": "No hay ningún archivo cargado para este tipo en la orden"}), 404
+            
+        # Si es una URL (Supabase/Nube)
+        if file_path.startswith("http://") or file_path.startswith("https://"):
+            from flask import redirect
+            return redirect(file_path)
+            
+        # Si es un archivo local en disco
+        if not os.path.exists(file_path):
+            return jsonify({"error": "El archivo físico no existe en el servidor local"}), 404
+            
+        from flask import send_from_directory
+        directory = os.path.dirname(file_path)
+        filename = os.path.basename(file_path)
+        return send_from_directory(directory, filename, as_attachment=True)
+        
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
@@ -450,20 +536,33 @@ def api_restaurar():
     import os
     data = request.json or {}
     filename = data.get('filename')
+    password = data.get('password')
     if not filename:
         return jsonify({"error": "Debe especificar el nombre del archivo de respaldo"}), 400
+    if not password:
+        return jsonify({"error": "Se requiere la contraseña de administrador para proceder."}), 401
 
     filename = os.path.basename(filename)
+
+    # Validar credenciales
+    db_session = Session()
+    try:
+        from flask import session as flask_session
+        usuario_id = flask_session.get('usuario_id')
+        usuario = db_session.query(Usuario).filter_by(id=usuario_id).first()
+        if not usuario or not usuario.check_password(password):
+            return jsonify({"error": "Contraseña incorrecta. Acción cancelada."}), 401
+    finally:
+        db_session.close()
 
     from restaurar_db import restaurar_archivo
     from database_models import LogAuditoria
     exito, msg = restaurar_archivo(filename)
     if exito:
-        from flask import session as flask_session
         session_db = Session()
         try:
             log = LogAuditoria(
-                usuario_id=flask_session.get('usuario_id', 1),
+                usuario_id=usuario_id,
                 accion="Restauración Manual",
                 detalles=f"Base de datos restaurada usando respaldo: {filename}"
             )
@@ -476,6 +575,146 @@ def api_restaurar():
         return jsonify({"mensaje": "Base de datos restaurada exitosamente."}), 200
     else:
         return jsonify({"error": f"Fallo al restaurar la base de datos: {msg}"}), 500
+
+@dashboard_bp.route('/api/mantenimiento/respaldos/<filename>/descargar', methods=['POST'])
+@login_required
+@role_required(RolEnum.ADMIN)
+def descargar_respaldo(filename):
+    import os
+    data = request.json or {}
+    password = data.get('password')
+    if not password:
+        return jsonify({"error": "Se requiere la contraseña de administrador para descargar el respaldo."}), 401
+
+    # Validar credenciales
+    db_session = Session()
+    try:
+        from flask import session as flask_session
+        usuario_id = flask_session.get('usuario_id')
+        usuario = db_session.query(Usuario).filter_by(id=usuario_id).first()
+        if not usuario or not usuario.check_password(password):
+            return jsonify({"error": "Contraseña incorrecta. Acción cancelada."}), 401
+    finally:
+        db_session.close()
+
+    carpeta_respaldos = os.getenv("BACKUP_DIR")
+    if not carpeta_respaldos:
+        ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+        carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
+
+    filename = os.path.basename(filename)
+    filepath = os.path.join(carpeta_respaldos, filename)
+    if not os.path.exists(filepath):
+        return jsonify({"error": "El archivo de respaldo no existe."}), 404
+
+    # Registrar auditoría
+    db_session = Session()
+    try:
+        from database_models import LogAuditoria
+        log = LogAuditoria(
+            usuario_id=usuario_id,
+            accion="Descarga de Respaldo",
+            detalles=f"Se descargó el archivo de respaldo: {filename}"
+        )
+        db_session.add(log)
+        db_session.commit()
+    except Exception:
+        db_session.rollback()
+    finally:
+        db_session.close()
+
+    from flask import send_from_directory
+    return send_from_directory(carpeta_respaldos, filename, as_attachment=True)
+
+@dashboard_bp.route('/api/mantenimiento/subir-restaurar', methods=['POST'])
+@login_required
+@role_required(RolEnum.ADMIN)
+def api_subir_restaurar():
+    import os
+    from datetime import datetime
+    from werkzeug.utils import secure_filename
+
+    password = request.form.get('password')
+    if not password:
+        return jsonify({"error": "Se requiere la contraseña de administrador para restaurar un respaldo."}), 401
+
+    # Validar credenciales
+    db_session = Session()
+    try:
+        from flask import session as flask_session
+        usuario_id = flask_session.get('usuario_id')
+        usuario = db_session.query(Usuario).filter_by(id=usuario_id).first()
+        if not usuario or not usuario.check_password(password):
+            return jsonify({"error": "Contraseña incorrecta. Acción cancelada."}), 401
+    finally:
+        db_session.close()
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No se subió ningún archivo."}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Nombre de archivo vacío."}), 400
+
+    if not file.filename.endswith('.sql'):
+        return jsonify({"error": "Solo se permiten archivos de respaldo con extensión .sql."}), 400
+
+    carpeta_respaldos = os.getenv("BACKUP_DIR")
+    if not carpeta_respaldos:
+        ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+        carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
+
+    if not os.path.exists(carpeta_respaldos):
+        os.makedirs(carpeta_respaldos)
+
+    fecha_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_name = secure_filename(file.filename)
+    filename = f"respaldo_subido_{fecha_str}_{safe_name}"
+    filepath = os.path.abspath(os.path.join(carpeta_respaldos, filename))
+
+    try:
+        file.save(filepath)
+
+        # Validaciones de integridad del archivo
+        if os.path.getsize(filepath) == 0:
+            os.remove(filepath)
+            return jsonify({"error": "El archivo de respaldo subido está vacío."}), 400
+
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            head = f.read(1000)
+            if not ("PostgreSQL database dump" in head or "CREATE TABLE" in head or "INSERT INTO" in head or "--" in head):
+                os.remove(filepath)
+                return jsonify({"error": "El archivo no parece ser un respaldo SQL válido."}), 400
+
+        # Ejecutar la restauración
+        from restaurar_db import restaurar_archivo
+        from database_models import LogAuditoria
+        
+        exito, msg = restaurar_archivo(filepath)
+        if exito:
+            session_db = Session()
+            try:
+                log = LogAuditoria(
+                    usuario_id=usuario_id,
+                    accion="Restauración por Carga",
+                    detalles=f"Base de datos restaurada mediante archivo subido: {safe_name}"
+                )
+                session_db.add(log)
+                session_db.commit()
+            except Exception:
+                session_db.rollback()
+            finally:
+                session_db.close()
+            return jsonify({"mensaje": "Base de datos restaurada exitosamente desde el archivo cargado."}), 200
+        else:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({"error": f"Fallo al restaurar la base de datos: {msg}"}), 500
+
+    except Exception as e:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({"error": f"Error al procesar el archivo: {str(e)}"}), 500
 
 @dashboard_bp.route('/api/admin/system/update', methods=['POST'])
 @login_required

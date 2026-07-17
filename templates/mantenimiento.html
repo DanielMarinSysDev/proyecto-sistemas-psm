@@ -34,31 +34,57 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Panel de Acciones Rápidas -->
-        <div class="glass border border-slate-800 rounded-xl p-6 flex flex-col justify-between h-fit">
-            <div>
-                <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        <!-- Columna de Acciones -->
+        <div class="flex flex-col gap-6">
+            <!-- Panel de Acciones Rápidas -->
+            <div class="glass border border-slate-800 rounded-xl p-6 flex flex-col justify-between h-fit">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Nuevo Respaldo
+                    </h2>
+                    <p class="text-sm text-slate-400 mb-6">
+                        Genera una copia de seguridad en formato SQL de toda la información actual del sistema: usuarios, clientes, pedidos, órdenes de trabajo y configuraciones generales. El archivo se almacenará de manera segura en el servidor.
+                    </p>
+                </div>
+                
+                <button @click="crearRespaldo()" :disabled="loading"
+                        class="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                    <svg x-show="!loading" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                     </svg>
-                    Nuevo Respaldo
-                </h2>
-                <p class="text-sm text-slate-400 mb-6">
-                    Genera una copia de seguridad en formato SQL de toda la información actual del sistema: usuarios, clientes, pedidos, órdenes de trabajo y configuraciones generales. El archivo se almacenará de manera segura en el servidor.
-                </p>
+                    <svg x-show="loading" class="animate-spin h-5.w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span x-text="loading ? 'Generando Respaldo...' : 'Crear Respaldo Ahora'"></span>
+                </button>
             </div>
-            
-            <button @click="crearRespaldo()" :disabled="loading"
-                    class="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
-                <svg x-show="!loading" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-                </svg>
-                <svg x-show="loading" class="animate-spin h-5 h-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span x-text="loading ? 'Generando Respaldo...' : 'Crear Respaldo Ahora'"></span>
-            </button>
+
+            <!-- Panel de Cargar Respaldo -->
+            <div class="glass border border-slate-800 rounded-xl p-6 flex flex-col justify-between h-fit">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        Subir y Restaurar
+                    </h2>
+                    <p class="text-sm text-slate-400 mb-6">
+                        Sube un archivo de respaldo (.sql) local para restaurar la base de datos a ese punto anterior. Toda la información actual será sobrescrita.
+                    </p>
+                </div>
+                
+                <button @click="abrirSubirRestaurar()" :disabled="loading"
+                        class="w-full inline-flex items-center justify-center px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg transition-all shadow-lg shadow-rose-500/10 hover:shadow-rose-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <span>Subir Respaldo...</span>
+                </button>
+            </div>
         </div>
 
         <!-- Tabla/Lista de Respaldos Existentes -->
@@ -87,7 +113,14 @@
                                     <td class="px-4 py-4 text-sm font-medium text-slate-200 font-mono">{{ r.nombre }}</td>
                                     <td class="px-4 py-4 text-sm text-slate-400">{{ r.fecha }}</td>
                                     <td class="px-4 py-4 text-sm text-slate-400">{{ r.tamano }}</td>
-                                    <td class="px-4 py-4 text-right text-sm">
+                                    <td class="px-4 py-4 text-right text-sm flex justify-end gap-2">
+                                        <button @click="confirmarDescargar('{{ r.nombre }}')"
+                                                class="inline-flex items-center px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/30 hover:border-blue-500/50 text-blue-300 text-xs font-semibold rounded-lg transition-all active:scale-95">
+                                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                            </svg>
+                                            Descargar
+                                        </button>
                                         <button @click="confirmarRestaurar('{{ r.nombre }}')"
                                                 class="inline-flex items-center px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/35 border border-amber-500/30 hover:border-amber-500/50 text-amber-300 text-xs font-semibold rounded-lg transition-all active:scale-95">
                                             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +144,7 @@
         </div>
     </div>
 
-    <!-- Modal de Confirmación de Restauración -->
+    <!-- Modal de Confirmación de Mantenimiento -->
     <div x-show="modal.show" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
         <!-- Backdrop -->
         <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
@@ -121,18 +154,51 @@
             <div class="glass border border-slate-700/60 rounded-2xl max-w-md w-full p-6 shadow-2xl relative z-10"
                  @click.away="modal.show = false">
                 
-                <div class="flex items-center space-x-3 text-rose-500 mb-4">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center space-x-3 mb-4" :class="modal.actionType === 'descargar' ? 'text-blue-500' : 'text-rose-500'">
+                    <!-- Icono para Restauración o Carga (Advertencia) -->
+                    <svg x-show="modal.actionType !== 'descargar'" class="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>
-                    <h3 class="text-lg font-bold text-slate-100">¿Confirmar Restauración?</h3>
+                    <!-- Icono para Descarga -->
+                    <svg x-show="modal.actionType === 'descargar'" class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    <h3 class="text-lg font-bold text-slate-100" x-text="
+                        modal.actionType === 'restaurar' ? '¿Confirmar Restauración?' :
+                        modal.actionType === 'descargar' ? '¿Descargar Respaldo?' :
+                        '¿Subir y Restaurar Respaldo?'
+                    "></h3>
                 </div>
                 
-                <p class="text-sm text-slate-300 mb-5 leading-relaxed">
-                    Estás a punto de restaurar la base de datos utilizando el archivo:
-                    <strong class="block font-mono bg-slate-950/80 px-2 py-1 border border-slate-800 rounded mt-2 text-slate-100" x-text="modal.filename"></strong>
-                </p>
-                <div class="p-3 bg-rose-950/40 border border-rose-800/40 rounded-lg text-xs text-rose-300 mb-6">
+                <div class="text-sm text-slate-300 mb-5 leading-relaxed">
+                    <span x-show="modal.actionType === 'restaurar'">
+                        Estás a punto de restaurar la base de datos utilizando el archivo:
+                        <strong class="block font-mono bg-slate-950/80 px-2 py-1 border border-slate-800 rounded mt-2 text-slate-100 font-bold" x-text="modal.filename"></strong>
+                    </span>
+                    <span x-show="modal.actionType === 'descargar'" style="display: none;">
+                        Descargarás una copia de la base de datos que contiene información de clientes, pedidos, tarifas y logs:
+                        <strong class="block font-mono bg-slate-950/80 px-2 py-1 border border-slate-800 rounded mt-2 text-slate-100 font-bold" x-text="modal.filename"></strong>
+                    </span>
+                    <span x-show="modal.actionType === 'subir_restaurar'" style="display: none;">
+                        Selecciona un archivo de respaldo (.sql) e ingresa tus credenciales. Toda la información actual del sistema será reemplazada por los datos del archivo subido.
+                    </span>
+                </div>
+
+                <!-- Input de archivo (solo si es subir_restaurar) -->
+                <div class="mb-5" x-show="modal.actionType === 'subir_restaurar'" style="display: none;">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Seleccionar Archivo de Respaldo (.sql)</label>
+                    <input type="file" id="backup-file-input" accept=".sql"
+                           class="w-full text-slate-300 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700">
+                </div>
+
+                <!-- Input de Contraseña de Administrador (para todos los flujos) -->
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Contraseña de Confirmación</label>
+                    <input type="password" x-model="modal.password" placeholder="Ingresa tu contraseña"
+                           class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+
+                <div x-show="modal.actionType !== 'descargar'" class="p-3 bg-rose-950/40 border border-rose-800/40 rounded-lg text-xs text-rose-300 mb-6">
                     <strong>¡Atención!</strong> Esta acción es irreversible. Se eliminarán todos los cambios y nuevos datos registrados después de la fecha de creación de este respaldo.
                 </div>
 
@@ -141,13 +207,19 @@
                             class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-lg transition-all active:scale-95 disabled:opacity-50">
                         Cancelar
                     </button>
-                    <button @click="ejecutarRestauracion()" :disabled="loading"
-                            class="inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold text-sm rounded-lg transition-all active:scale-95 disabled:opacity-50">
+                    <button @click="ejecutarAccion()" :disabled="loading"
+                            class="inline-flex items-center px-4 py-2 font-semibold text-sm rounded-lg transition-all active:scale-95 disabled:opacity-50"
+                            :class="modal.actionType === 'descargar' ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-rose-600 hover:bg-rose-500 text-white'">
                         <svg x-show="loading" class="animate-spin h-4 w-4 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span x-text="loading ? 'Restaurando...' : 'Restaurar Base de Datos'"></span>
+                        <span x-text="
+                            loading ? 'Procesando...' :
+                            modal.actionType === 'restaurar' ? 'Restaurar Base de Datos' :
+                            modal.actionType === 'descargar' ? 'Descargar' :
+                            'Cargar y Restaurar'
+                        "></span>
                     </button>
                 </div>
             </div>
@@ -167,7 +239,9 @@ function mantenimientoApp() {
         },
         modal: {
             show: false,
-            filename: ''
+            actionType: '', // 'restaurar' | 'descargar' | 'subir_restaurar'
+            filename: '',
+            password: ''
         },
         showAlert(type, message) {
             this.alert.type = type;
@@ -203,22 +277,124 @@ function mantenimientoApp() {
             }
         },
         confirmarRestaurar(filename) {
+            this.modal.actionType = 'restaurar';
             this.modal.filename = filename;
+            this.modal.password = '';
             this.modal.show = true;
+        },
+        confirmarDescargar(filename) {
+            this.modal.actionType = 'descargar';
+            this.modal.filename = filename;
+            this.modal.password = '';
+            this.modal.show = true;
+        },
+        abrirSubirRestaurar() {
+            this.modal.actionType = 'subir_restaurar';
+            this.modal.filename = '';
+            this.modal.password = '';
+            this.modal.show = true;
+            // Resetear input de archivo si existe
+            const fileInput = document.getElementById('backup-file-input');
+            if (fileInput) fileInput.value = '';
+        },
+        async ejecutarAccion() {
+            if (!this.modal.password) {
+                alert("Debes ingresar tu contraseña de administrador.");
+                return;
+            }
+            
+            if (this.modal.actionType === 'restaurar') {
+                await this.ejecutarRestauracion();
+            } else if (this.modal.actionType === 'descargar') {
+                await this.ejecutarDescarga();
+            } else if (this.modal.actionType === 'subir_restaurar') {
+                await this.ejecutarSubidaRestauracion();
+            }
         },
         async ejecutarRestauracion() {
             this.loading = true;
+            const filename = this.modal.filename;
+            const password = this.modal.password;
             this.modal.show = false;
             this.alert.show = false;
             try {
                 const response = await fetch('/api/mantenimiento/restaurar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: this.modal.filename })
+                    body: JSON.stringify({ filename: filename, password: password })
                 });
                 const data = await response.json();
                 if (response.ok) {
                     this.showAlert('success', data.mensaje || 'Base de datos restaurada con éxito.');
+                } else {
+                    this.showAlert('error', data.error || 'Error al restaurar la base de datos.');
+                }
+            } catch (err) {
+                this.showAlert('error', 'Fallo en la comunicación con el servidor.');
+            } finally {
+                this.loading = false;
+            }
+        },
+        async ejecutarDescarga() {
+            this.loading = true;
+            const filename = this.modal.filename;
+            const password = this.modal.password;
+            this.modal.show = false;
+            this.alert.show = false;
+            try {
+                const response = await fetch(`/api/mantenimiento/respaldos/${filename}/descargar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password })
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    this.showAlert('success', 'Archivo de respaldo descargado correctamente.');
+                } else {
+                    const data = await response.json();
+                    this.showAlert('error', data.error || 'Error al descargar el respaldo.');
+                }
+            } catch (err) {
+                this.showAlert('error', 'Fallo en la comunicación con el servidor.');
+            } finally {
+                this.loading = false;
+            }
+        },
+        async ejecutarSubidaRestauracion() {
+            const fileInput = document.getElementById('backup-file-input');
+            if (!fileInput || !fileInput.files[0]) {
+                alert("Debes seleccionar un archivo .sql para restaurar.");
+                return;
+            }
+            
+            this.loading = true;
+            const password = this.modal.password;
+            const file = fileInput.files[0];
+            this.modal.show = false;
+            this.alert.show = false;
+            
+            const formData = new FormData();
+            formData.append('password', password);
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/mantenimiento/subir-restaurar', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    this.showAlert('success', data.mensaje || 'Base de datos restaurada con éxito desde el archivo subido.');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
                 } else {
                     this.showAlert('error', data.error || 'Error al restaurar la base de datos.');
                 }

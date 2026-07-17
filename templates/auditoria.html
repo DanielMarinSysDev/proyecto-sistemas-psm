@@ -2,9 +2,102 @@
 
 {% block title %}Auditoría de Logs - TaskCore{% endblock %}
 
+{% block extra_head %}
+<style>
+@media print {
+    /* Hide side navigation, filters, pagination, and print buttons */
+    aside, nav, header, form, .no-print, button, a, .text-sm.font-mono {
+        display: none !important;
+    }
+    
+    /* Reset body styles for standard page print layout */
+    body, html {
+        background: white !important;
+        color: black !important;
+        overflow: visible !important;
+        height: auto !important;
+        width: 100% !important;
+    }
+    
+    /* Ensure content takes full page width */
+    .max-w-7xl, .px-4, .py-6, main {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .glass {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+    
+    /* Format audit logs table clearly for ink printing */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 15px !important;
+    }
+    
+    thead {
+        background-color: #f1f5f9 !important;
+        border-bottom: 2px solid #94a3b8 !important;
+    }
+    
+    th, td {
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding: 10px 8px !important;
+        font-size: 11px !important;
+        color: #0f172a !important;
+        text-align: left !important;
+    }
+    
+    td {
+        word-break: break-word !important;
+    }
+    
+    .w-8.h-8 {
+        display: none !important;
+    }
+    
+    .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500, .text-blue-400 {
+        color: #0f172a !important;
+    }
+    
+    /* Display the custom print header block */
+    .print-only-header {
+        display: block !important;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="px-4 py-6 sm:px-6 lg:px-8 max-w-7xl mx-auto">
     
+    <!-- Title displayed only when printing -->
+    <div class="hidden print-only-header mb-6 border-b-2 border-slate-900 pb-3">
+        <h1 class="text-2xl font-bold text-slate-900">TaskCore - Reporte de Auditoría de Logs</h1>
+        <p class="text-sm text-slate-600">Fecha de Impresión: <span id="print-date-span"></span></p>
+        <script>
+            window.addEventListener('beforeprint', () => {
+                const dateSpan = document.getElementById('print-date-span');
+                if (dateSpan) {
+                    dateSpan.textContent = new Date().toLocaleString('es-ES');
+                }
+            });
+            // Fallback for immediate DOM load
+            document.addEventListener('DOMContentLoaded', () => {
+                const dateSpan = document.getElementById('print-date-span');
+                if (dateSpan && !dateSpan.textContent) {
+                    dateSpan.textContent = new Date().toLocaleString('es-ES');
+                }
+            });
+        </script>
+    </div>
+
     <!-- Encabezado -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-slate-700/50 pb-5">
         <div>
@@ -16,8 +109,16 @@
             </h1>
             <p class="mt-2 text-sm text-slate-400">Historial completo y trazabilidad de eventos, acciones y automatizaciones del sistema.</p>
         </div>
-        <div class="text-sm font-mono bg-slate-950/80 border border-slate-800 text-slate-400 px-3 py-1.5 rounded-lg">
-            Total Logs: <span class="text-blue-400 font-bold">{{ total_logs }}</span>
+        <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="inline-flex items-center justify-center px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 text-sm font-semibold rounded-lg transition-all active:scale-95 border border-slate-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Imprimir PDF
+            </button>
+            <div class="text-sm font-mono bg-slate-950/80 border border-slate-800 text-slate-400 px-3 py-2.5 rounded-lg">
+                Total Logs: <span class="text-blue-400 font-bold">{{ total_logs }}</span>
+            </div>
         </div>
     </div>
 

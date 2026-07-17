@@ -22,6 +22,20 @@
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css?v=1.0.3">
+    <link rel="manifest" href="/static/manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                .then(reg => {
+                    console.log('Service Worker registrado en el ámbito móvil:', reg.scope);
+                })
+                .catch(err => {
+                    console.error('Error al registrar Service Worker en móvil:', err);
+                });
+            });
+        }
+    </script>
 </head>
 <body class="text-slate-200 antialiased h-screen flex flex-col">
 
@@ -132,7 +146,7 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 nuevo_estado: "Completado",
-                                usuario_id: 1 // TODO: Usar sesión real
+                                usuario_id: {{ session.get('usuario_id', 1) }}
                             })
                         });
                         

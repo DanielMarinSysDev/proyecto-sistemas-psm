@@ -113,7 +113,7 @@
                                             <input type="number" step="0.01" min="0" x-model="monto" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 mt-0.5 focus:outline-none focus:ring-1 focus:ring-amber-500">
                                         </div>
                                         <label class="flex items-center text-[10px] text-slate-400 cursor-pointer select-none">
-                                            <input type="checkbox" x-model="ocultar" class="mr-1.5 w-3.5 h-3.5 rounded border-slate-750 bg-slate-900 text-amber-500 focus:ring-amber-500">
+                                            <input type="checkbox" x-model="ocultar" class="mr-1.5 w-3.5 h-3.5 rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-amber-500">
                                             Ocultar precio a Ventas
                                         </label>
                                         <button @click.stop="if(!monto){alert('Ingrese un monto'); return;} resolverIncidencia(orden.id, orden.incidencia_id, { monto_aprobado: monto, ocultar_precio_ventas: ocultar })" class="w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold py-1.5 rounded text-[10px] text-center transition-colors">
@@ -138,7 +138,7 @@
                         <!-- Acciones Rápidas (Adjuntos) -->
                         {% if session.get('usuario_rol') in ['Administrador', 'Técnico de Diagnóstico'] %}
                         <div class="mb-3 pl-2 flex items-center gap-2" x-show="orden.estado === 'En Diagnóstico' || orden.estado === 'En Revisión (Presupuesto)'">
-                            <input type="file" :id="'file_' + orden.id" class="hidden" @change="uploadMuestra(orden.id, $event)" accept=".jpg,.jpeg,.png,.pdf">
+                            <input type="file" :id="'file_' + orden.id" class="hidden" @change="uploadMuestra(orden, $event)" accept=".jpg,.jpeg,.png,.pdf">
                             <button @click="document.getElementById('file_' + orden.id).click()" class="text-xs bg-slate-900/80 hover:bg-slate-700 text-blue-300 border border-blue-900/50 px-2 py-1 rounded flex items-center transition-colors">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                 Subir Informe / Diagnóstico
@@ -196,7 +196,7 @@
                                 </div>
                                 {% endif %}
                                 {% if session.get('usuario_rol') == 'Técnico de Diagnóstico' %}
-                                <button x-show="!orden.disenador_id && (orden.estado === 'Pendiente (Ingreso)' || orden.estado === 'En Diagnóstico')" @click.stop="asignarDisenador(orden.id, currentUserId)" class="ml-2 text-xs font-semibold bg-blue-600/20 border border-blue-500/50 hover:bg-blue-650/40 text-blue-300 px-2.5 py-1.5 rounded-md transition-colors flex items-center" title="Tomar Tarea">
+                                <button x-show="!orden.disenador_id && (orden.estado === 'Pendiente (Ingreso)' || orden.estado === 'En Diagnóstico')" @click.stop="asignarDisenador(orden.id, currentUserId)" class="ml-2 text-xs font-semibold bg-blue-600/20 border border-blue-500/50 hover:bg-blue-600/40 text-blue-300 px-2.5 py-1.5 rounded-md transition-colors flex items-center" title="Tomar Tarea">
                                     <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     Tomar Diagnóstico
                                 </button>
@@ -207,6 +207,16 @@
                             </div>
                             
                             <div class="flex items-center gap-1.5">
+                                <template x-if="orden.ruta_muestra">
+                                    <a :href="'/api/ordenes/' + orden.id + '/descargar/muestra'" target="_blank" class="p-1.5 rounded bg-slate-900/50 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 transition-colors" title="Ver Evidencia / Informe">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </a>
+                                </template>
+                                <template x-if="orden.ruta_instalacion">
+                                    <a :href="'/api/ordenes/' + orden.id + '/descargar/instalacion'" target="_blank" class="p-1.5 rounded bg-slate-900/50 text-slate-400 hover:text-blue-400 hover:bg-slate-700 transition-colors" title="Ver Foto de Entrega">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    </a>
+                                </template>
                                 {% if session.get('usuario_rol') in ['Administrador', 'Recepción / Soporte', 'Gerencia'] %}
                                 <button @click.stop="abrirModalCancelar(orden.id)" class="p-1.5 rounded bg-slate-900/50 text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Cancelar Orden">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -334,7 +344,7 @@
                 <button @click="cancelarModalOpen = false" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">
                     Volver
                 </button>
-                <button @click="enviarCancelar()" class="px-4 py-2 text-sm font-semibold bg-red-650 hover:bg-red-600 text-white rounded-lg transition-colors shadow-lg shadow-red-500/25">
+                <button @click="enviarCancelar()" class="px-4 py-2 text-sm font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors shadow-lg shadow-red-500/25">
                     Confirmar Cancelación
                 </button>
             </div>
@@ -536,7 +546,7 @@
                 await this.changeState(this.deudaOrderId, 'Completado / Entregado', enviarRecordatorio);
             },
             
-            async uploadMuestra(orderId, event) {
+            async uploadMuestra(orden, event) {
                 const file = event.target.files[0];
                 if (!file) return;
                 
@@ -544,13 +554,15 @@
                 formData.append('file', file);
                 
                 try {
-                    const response = await fetch(`/api/ordenes/${orderId}/upload-muestra`, {
+                    const response = await fetch(`/api/ordenes/${orden.id}/upload-muestra`, {
                         method: 'POST',
                         body: formData
                     });
                     
                     if (response.ok) {
-                        const statusEl = document.getElementById('upload_status_' + orderId);
+                        const data = await response.json();
+                        orden.ruta_muestra = data.ruta;
+                        const statusEl = document.getElementById('upload_status_' + orden.id);
                         if(statusEl) {
                             statusEl.classList.remove('hidden');
                             setTimeout(() => { statusEl.classList.add('hidden'); }, 3000);

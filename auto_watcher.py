@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 Session = sessionmaker(bind=engine)
 
 # Carpeta a vigilar (construida dinámicamente)
-WATCH_DIR = os.path.join(BASE_DIR, "Cola_Produccion")
+WATCH_DIR = os.path.join(BASE_DIR, "Cola_Soporte")
 
 # Expresión regular para extraer P#_A# (ej: [P3_A1])
 REGEX_ID = re.compile(r"\[P\d+_A(\d+)\]")
@@ -56,7 +56,7 @@ class ProduccionEventHandler(FileSystemEventHandler):
             hay_pendientes = False
             tag_busca = f"_A{articulo_id}]"
             
-            for m in ['SOPORTE_TECNICO', 'LABORATORIO_HARDWARE', 'LABORATORIO_SOFTWARE', 'DIAGNOSTICOS', 'CONTROL_CALIDAD', 'PLOTTER', 'PLOTTER_CORTE', 'IMPRESORA_UV', 'LASER', 'CNC']:
+            for m in ['SOPORTE_TECNICO', 'LABORATORIO_HARDWARE', 'LABORATORIO_SOFTWARE', 'DIAGNOSTICOS', 'CONTROL_CALIDAD']:
                 m_dir = os.path.join(WATCH_DIR, m)
                 for folder in [m_dir, os.path.join(m_dir, "Procesando")]:
                     if os.path.exists(folder):
@@ -145,7 +145,7 @@ def check_and_archive_history():
             
         # 2. Iterar por cada día faltante (desde ultimo_registro + 1 día hasta ayer)
         dia_a_procesar = ultimo_registro + timedelta(days=1)
-        maquinas = ['PLOTTER', 'PLOTTER_CORTE', 'IMPRESORA_UV', 'LASER', 'CNC']
+        maquinas = ['SOPORTE_TECNICO', 'LABORATORIO_HARDWARE', 'LABORATORIO_SOFTWARE', 'DIAGNOSTICOS', 'CONTROL_CALIDAD']
         
         while dia_a_procesar <= ayer:
             dia_num = str(dia_a_procesar.day)
