@@ -1,9 +1,9 @@
 {
-  "short_name": "Grafi-k",
-  "name": "Sistema Grafi-k",
+  "short_name": "TaskCore",
+  "name": "Sistema TaskCore",
   "icons": [
     {
-      "src": "/static/img/Logo Azul.svg",
+      "src": "/static/img/TaskCore_Isotipo.svg",
       "type": "image/svg+xml",
       "sizes": "any",
       "purpose": "any"

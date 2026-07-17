@@ -89,9 +89,18 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-inner bg-slate-800 border border-slate-700"
-                                     style="background-color: {% if log.usuario_rol == 'Administrador' %}rgba(124, 58, 237, 0.25){% elif log.usuario_rol == 'Técnico de Diagnóstico' %}rgba(37, 99, 235, 0.25){% elif log.usuario_rol == 'Recepción / Soporte' %}rgba(16, 185, 129, 0.25){% elif log.usuario_rol == 'Técnico de Reparación' %}rgba(249, 115, 22, 0.25){% else %}rgba(100, 116, 139, 0.25){% endif %};
-                                            border-color: {% if log.usuario_rol == 'Administrador' %}rgba(139, 92, 246, 0.4){% elif log.usuario_rol == 'Técnico de Diagnóstico' %}rgba(59, 130, 246, 0.4){% elif log.usuario_rol == 'Recepción / Soporte' %}rgba(52, 211, 153, 0.4){% elif log.usuario_rol == 'Técnico de Reparación' %}rgba(251, 146, 60, 0.4){% else %}rgba(148, 163, 184, 0.4){% endif %};">
-                                    {{ log.usuario_nombre[0].toUpperCase() }}
+                                     {% if log.usuario_rol == 'Administrador' %}
+                                     style="background-color: rgba(124, 58, 237, 0.25); border-color: rgba(139, 92, 246, 0.4);"
+                                     {% elif log.usuario_rol == 'Técnico de Diagnóstico' %}
+                                     style="background-color: rgba(37, 99, 235, 0.25); border-color: rgba(59, 130, 246, 0.4);"
+                                     {% elif log.usuario_rol == 'Recepción / Soporte' %}
+                                     style="background-color: rgba(16, 185, 129, 0.25); border-color: rgba(52, 211, 153, 0.4);"
+                                     {% elif log.usuario_rol == 'Técnico de Reparación' %}
+                                     style="background-color: rgba(249, 115, 22, 0.25); border-color: rgba(251, 146, 60, 0.4);"
+                                     {% else %}
+                                     style="background-color: rgba(100, 116, 139, 0.25); border-color: rgba(148, 163, 184, 0.4);"
+                                     {% endif %}>
+                                    {{ log.usuario_nombre[0].upper() }}
                                 </div>
                                 <div class="flex flex-col">
                                     <span class="font-semibold text-slate-200 text-xs">{{ log.usuario_nombre }}</span>
