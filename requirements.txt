@@ -10,3 +10,4 @@ python-dotenv==1.2.2
 requests==2.33.1
 watchdog==6.0.0
 alembic==1.18.4
+Pillow

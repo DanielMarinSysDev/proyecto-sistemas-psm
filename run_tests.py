@@ -618,6 +618,13 @@ class TestSistemaTaskCore(unittest.TestCase):
         self.assertIn('top_clientes', data)
         self.assertIn('cobros_stats', data)
         
+        # 4. Validar reporte anual ("Todo el año")
+        resp_anual = self.client.get('/api/finanzas/reportes?mes=todo&anio=2026')
+        self.assertEqual(resp_anual.status_code, 200)
+        data_anual = resp_anual.get_json()
+        self.assertIn('total_generado_mes', data_anual)
+        self.assertIn('cobros_stats', data_anual)
+        
         self.logout()
 
     def test_15_edicion_usuario(self):

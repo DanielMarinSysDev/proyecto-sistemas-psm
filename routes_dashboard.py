@@ -421,6 +421,215 @@ def descargar_archivo_orden(orden_id, tipo):
     finally:
         session.close()
 
+@dashboard_bp.route('/api/ordenes/<int:orden_id>/archivos', methods=['GET'])
+@login_required
+def listar_archivos_orden(orden_id):
+    """
+    Lista todos los archivos subidos en la carpeta Evidencia_Fotos de la orden,
+    tanto de forma local como en Supabase Storage.
+    """
+    session = Session()
+    try:
+        orden = session.query(OrdenTrabajo).filter_by(id=orden_id).first()
+        if not orden:
+            return jsonify({"error": "Orden no encontrada"}), 404
+            
+        archivos = []
+        
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_key = os.environ.get("SUPABASE_KEY")
+        
+        def format_size(size_bytes):
+            if size_bytes >= 1024 * 1024:
+                return f"{size_bytes / (1024 * 1024):.2f} MB"
+            elif size_bytes >= 1024:
+                return f"{size_bytes / 1024:.2f} KB"
+            return f"{size_bytes} B"
+
+        def is_image_file(fname):
+            ext = fname.split('.')[-1].lower() if '.' in fname else ''
+            return ext in ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']
+
+        if supabase_url and supabase_key:
+            import requests
+            bucket_name = "archivos"
+            prefix = f"orden_{orden.id}/Evidencia_Fotos"
+            
+            list_url = f"{supabase_url.rstrip('/')}/storage/v1/object/list/{bucket_name}"
+            headers = {
+                "Authorization": f"Bearer {supabase_key}",
+                "apikey": supabase_key,
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "prefix": prefix,
+                "options": {
+                    "limit": 100,
+                    "offset": 0,
+                    "sortBy": {
+                        "column": "name",
+                        "order": "asc"
+                    }
+                }
+            }
+            
+            response = requests.post(list_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                objects = response.json()
+                for obj in objects:
+                    name = obj.get('name')
+                    if not name or name == '.placeholder':
+                        continue
+                    
+                    size_bytes = obj.get('metadata', {}).get('size', 0)
+                    tamanio = format_size(size_bytes)
+                    tipo = 'image' if is_image_file(name) else ('pdf' if name.lower().endswith('.pdf') else 'other')
+                    
+                    url_descarga = f"{supabase_url.rstrip('/')}/storage/v1/object/public/{bucket_name}/{prefix}/{name}"
+                    url_preview = f"/api/ordenes/{orden.id}/preview/{name}"
+                    
+                    archivos.append({
+                        "nombre": name,
+                        "tamanio": tamanio,
+                        "tipo": tipo,
+                        "url_descarga": url_descarga,
+                        "url_preview": url_preview
+                    })
+        else:
+            if orden.ruta_archivos_transaccionales:
+                local_dir = os.path.join(orden.ruta_archivos_transaccionales, "Evidencia_Fotos")
+                if os.path.exists(local_dir):
+                    for filename in os.listdir(local_dir):
+                        file_path = os.path.join(local_dir, filename)
+                        if os.path.isfile(file_path):
+                            size_bytes = os.path.getsize(file_path)
+                            tamanio = format_size(size_bytes)
+                            tipo = 'image' if is_image_file(filename) else ('pdf' if filename.lower().endswith('.pdf') else 'other')
+                            
+                            url_descarga = f"/api/ordenes/{orden.id}/descargar-archivo/{filename}"
+                            url_preview = f"/api/ordenes/{orden.id}/preview/{filename}"
+                            
+                            archivos.append({
+                                "nombre": filename,
+                                "tamanio": tamanio,
+                                "tipo": tipo,
+                                "url_descarga": url_descarga,
+                                "url_preview": url_preview
+                            })
+                            
+        return jsonify({"archivos": archivos}), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+@dashboard_bp.route('/api/ordenes/<int:orden_id>/descargar-archivo/<filename>', methods=['GET'])
+@login_required
+def descargar_archivo_especifico(orden_id, filename):
+    """
+    Descarga un archivo específico local de la orden.
+    """
+    session = Session()
+    try:
+        orden = session.query(OrdenTrabajo).filter_by(id=orden_id).first()
+        if not orden or not orden.ruta_archivos_transaccionales:
+            return jsonify({"error": "Orden no encontrada"}), 404
+            
+        file_path = os.path.join(orden.ruta_archivos_transaccionales, "Evidencia_Fotos", filename)
+        if not os.path.exists(file_path):
+            return jsonify({"error": "El archivo físico no existe"}), 404
+            
+        from flask import send_from_directory
+        return send_from_directory(os.path.dirname(file_path), filename, as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+@dashboard_bp.route('/api/ordenes/<int:orden_id>/preview/<filename>', methods=['GET'])
+@login_required
+def previsualizar_archivo(orden_id, filename):
+    """
+    Genera y sirve una previsualización (thumbnail) optimizada del archivo.
+    Utiliza almacenamiento en caché en el servidor para evitar sobrecargar la CPU.
+    """
+    session = Session()
+    try:
+        orden = session.query(OrdenTrabajo).filter_by(id=orden_id).first()
+        if not orden:
+            return jsonify({"error": "Orden no encontrada"}), 404
+            
+        def is_image_file(fname):
+            ext = fname.split('.')[-1].lower() if '.' in fname else ''
+            return ext in ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']
+
+        # Determinar si es imagen
+        if not is_image_file(filename):
+            return jsonify({"error": "Solo se generan previsualizaciones para archivos de imagen"}), 400
+
+        # Ruta del Cache en el servidor
+        from file_manager import BASE_DIR
+        cache_dir = os.path.join(BASE_DIR, "Cache_Previews")
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_filename = f"orden_{orden.id}_{filename}_300x300.jpg"
+        cache_path = os.path.join(cache_dir, cache_filename)
+
+        # Si ya existe en caché, servirlo directamente con headers de cache fuertes
+        from flask import send_file, make_response
+        import mimetypes
+        if os.path.exists(cache_path):
+            response = make_response(send_file(cache_path, mimetype='image/jpeg'))
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            return response
+
+        # Obtener los bytes originales de la imagen
+        file_bytes = None
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_key = os.environ.get("SUPABASE_KEY")
+        
+        if supabase_url and supabase_key:
+            import requests
+            file_url = f"{supabase_url.rstrip('/')}/storage/v1/object/public/archivos/orden_{orden.id}/Evidencia_Fotos/{filename}"
+            res = requests.get(file_url)
+            if res.status_code == 200:
+                file_bytes = res.content
+        else:
+            if orden.ruta_archivos_transaccionales:
+                local_path = os.path.join(orden.ruta_archivos_transaccionales, "Evidencia_Fotos", filename)
+                if os.path.exists(local_path):
+                    with open(local_path, "rb") as f:
+                        file_bytes = f.read()
+
+        if not file_bytes:
+            return jsonify({"error": "Archivo original no encontrado"}), 404
+
+        # Intentar redimensionar con Pillow
+        import io
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(file_bytes))
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            img.thumbnail((300, 300))
+            
+            img.save(cache_path, format="JPEG", quality=70)
+            
+            response = make_response(send_file(cache_path, mimetype='image/jpeg'))
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            return response
+        except Exception as pe:
+            response = make_response(file_bytes)
+            content_type, _ = mimetypes.guess_type(filename)
+            response.headers['Content-Type'] = content_type or 'image/jpeg'
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+            return response
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
 @dashboard_bp.route('/api/ordenes/<int:orden_id>/asignar', methods=['PUT'])
 @login_required
 @role_required(RolEnum.ADMIN, RolEnum.GERENCIA, RolEnum.VENTAS)

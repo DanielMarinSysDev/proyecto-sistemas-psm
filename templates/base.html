@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}TaskCore - Control de Órdenes y Producción{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="/static/img/TaskCore_Isotipo.svg">
+    <link rel="apple-touch-icon" href="/static/img/TaskCore_Isotipo.svg">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#0278D2">
     <!-- Prevent theme flash -->
     <script>
         if (localStorage.getItem('theme') === 'light') {
@@ -237,12 +240,18 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative z-10" x-data="globalSearch()">
         <!-- Top header for mobile (hidden on md) -->
-        <header class="h-16 glass-panel border-b border-slate-800 flex items-center justify-between px-4 md:hidden">
+        <header class="h-16 glass-panel border-b border-slate-800 flex items-center justify-between px-4 md:hidden no-print">
             <div class="flex items-center">
-                <!-- Inline SVG G Logo -->
-                <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center mr-3 shadow-md shadow-blue-500/20 text-white p-1">
-                    <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                <!-- Brand Isotipo (Mobile) -->
+                <div class="w-8 h-8 rounded bg-slate-900 border border-slate-700/50 flex items-center justify-center mr-3 shadow-md shadow-blue-500/10 text-blue-400 p-1.5">
+                    <svg class="w-full h-full" viewBox="0 0 478 549.31" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M473.75,134.22l-93.08-53.74-8.5,14.72,88.83,51.29v102.58h17v-107.48c0-3.04-1.62-5.84-4.25-7.36Z"/>
+                        <path d="M461,402.83l-88.83,51.29,8.5,14.72,93.08-53.74c2.63-1.52,4.25-4.32,4.25-7.36v-107.48h-17v102.58Z"/>
+                        <path d="M239,531l-88.83-51.29-8.5,14.72,93.08,53.74c1.32.76,2.78,1.14,4.25,1.14s2.93-.38,4.25-1.14l93.08-53.74-8.5-14.72-88.83,51.29Z"/>
+                        <path d="M17,300.25H0v107.48c0,3.04,1.62,5.84,4.25,7.36l93.08,53.74,8.5-14.72-88.83-51.29v-102.58Z"/>
+                        <path d="M17,146.48l88.83-51.29-8.5-14.72L4.25,134.22c-2.63,1.52-4.25,4.32-4.25,7.36v107.48h17v-102.58Z"/>
+                        <path d="M239,18.31l88.83,51.29,8.5-14.72L243.25,1.14c-2.63-1.52-5.87-1.52-8.5,0l-93.08,53.74,8.5,14.72,88.83-51.29Z"/>
+                        <path d="M418.19,378.11c10.96-18.98,4.43-43.34-14.55-54.3-9.2-5.31-19.91-6.72-30.16-3.97-7.46,2-14.02,6.03-19.09,11.62l-49.72-28.71v-56.18l49.72-28.71c5.07,5.59,11.63,9.62,19.09,11.62,3.42.92,6.9,1.37,10.35,1.37,6.89,0,13.69-1.81,19.81-5.34,9.2-5.31,15.77-13.88,18.52-24.14,2.75-10.26,1.34-20.97-3.97-30.16-10.96-18.98-35.32-25.51-54.3-14.55-9.2,5.31-15.77,13.88-18.52,24.14-2,7.46-1.79,15.16.52,22.34l-49.72,28.71-48.66-28.09v-57.43c17.85-3.9,31.25-19.83,31.25-38.83,0-21.92-17.83-39.75-39.75-39.75s-39.75,17.83-39.75,39.75c0,19,13.4,34.92,31.25,38.83v57.43l-48.66,28.09-49.73-28.71c2.3-7.18,2.51-14.88.51-22.34-2.75-10.26-9.33-18.83-18.52-24.14s-19.91-6.72-30.16-3.97c-10.26,2.75-18.83,9.33-24.14,18.52s-6.72,19.91-3.97,30.16c2.75,10.26,9.33,18.83,18.52,24.14,6.12,3.54,12.92,5.34,19.81,5.34,3.45,0,6.93-.45,10.35-1.37,7.46-2,14.02-6.03,19.09-11.62l49.72,28.71v56.18l-49.72,28.71c-5.07-5.59-11.63-9.62-19.09-11.62-10.26-2.75-20.97-1.34-30.16,3.97-18.98,10.96-25.51,35.32-14.55,54.3,5.31,9.2,13.88,15.77,24.14,18.52,3.42.92,6.9,1.37,10.35,1.37,6.89,0,13.69-1.81,19.81-5.34,9.2-5.31,15.77-13.88,18.52-24.14,2-7.46,1.79-15.16-.51-22.34l49.72-28.71,48.66,28.09v57.43c-17.85,3.9-31.25,19.83-31.25,38.83,0,21.92,17.83,39.75,39.75,39.75s39.75-17.83,39.75-39.75c0-19-13.4-34.92-31.25-38.83v-57.43l48.66-28.09,49.72,28.71c-2.3,7.18-2.51,14.88-.52,22.34,2.75,10.26,9.33,18.83,18.52,24.14,6.25,3.61,13.07,5.32,19.81,5.32,13.75,0,27.14-7.13,34.49-19.87ZM372.39,171.37c3.57-2.06,7.48-3.04,11.34-3.04,7.87,0,15.53,4.08,19.74,11.37,3.04,5.26,3.85,11.39,2.27,17.26-1.57,5.87-5.34,10.78-10.6,13.81-5.26,3.04-11.39,3.84-17.26,2.27-5.87-1.57-10.78-5.34-13.81-10.6-6.27-10.86-2.54-24.81,8.33-31.08ZM216.25,107.5c0-12.55,10.21-22.75,22.75-22.75s22.75,10.21,22.75,22.75-10.21,22.75-22.75,22.75-22.75-10.21-22.75-22.75ZM100.12,213.05c-5.87,1.57-12,.77-17.26-2.27-5.26-3.04-9.03-7.94-10.6-13.81-1.57-5.87-.77-12,2.27-17.26,3.04-5.26,7.94-9.03,13.81-10.6,1.96-.52,3.95-.78,5.93-.78,3.94,0,7.83,1.03,11.34,3.06,5.26,3.04,9.03,7.94,10.6,13.81,1.57,5.87.77,12-2.27,17.26-3.04,5.26-7.94,9.03-13.81,10.6ZM116.21,364.12c-1.57,5.87-5.34,10.78-10.6,13.81-5.26,3.04-11.39,3.84-17.26,2.27-5.87-1.57-10.78-5.34-13.81-10.6-6.27-10.87-2.54-24.81,8.33-31.08,3.51-2.02,7.4-3.06,11.34-3.06,1.98,0,3.97.26,5.93.78,5.87,1.57,10.78,5.34,13.81,10.6,3.04,5.26,3.85,11.39,2.27,17.26ZM261.75,441.81c0,12.55-10.21,22.75-22.75,22.75s-22.75-10.21-22.75-22.75,10.21-22.75,22.75-22.75,22.75,10.21,22.75,22.75ZM287.66,302.75l-48.66,28.09-48.66-28.09v-56.18l48.66-28.09,48.66,28.09v56.18ZM364.06,346.86c3.04-5.26,7.94-9.03,13.81-10.6,5.87-1.57,12-.77,17.26,2.27,10.87,6.27,14.6,20.21,8.33,31.08-6.27,10.86-20.21,14.6-31.08,8.33-10.86-6.27-14.6-20.21-8.33-31.08Z"/>
                     </svg>
                 </div>
                 <span class="text-xl font-logo tracking-wider text-white">TaskCore</span>
@@ -264,7 +273,7 @@
         </header>
         
         <!-- Search Bar (Desktop) -->
-        <div class="hidden md:flex h-16 glass-panel border-b border-slate-800 items-center justify-between px-8 sticky top-0 z-20">
+        <div class="hidden md:flex h-16 glass-panel border-b border-slate-800 items-center justify-between px-8 sticky top-0 z-20 no-print">
             <div class="relative w-full max-w-2xl">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -317,7 +326,7 @@
             <div class="flex-1">
                 {% block content %}{% endblock %}
             </div>
-            <footer class="mt-8 pt-4 border-t border-slate-800/30 text-center text-[10px] text-slate-500 font-sans tracking-wide">
+            <footer class="mt-8 pt-4 border-t border-slate-800/30 text-center text-[10px] text-slate-500 font-sans tracking-wide no-print">
                 &copy; 2026 TaskCore. Todos los derechos reservados.
             </footer>
         </main>

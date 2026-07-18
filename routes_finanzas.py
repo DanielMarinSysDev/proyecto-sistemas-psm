@@ -280,7 +280,12 @@ def obtener_total_usd(pedido):
     if not pedido or not pedido.monto_total:
         return 0.0
     if pedido.moneda == 'Bs':
-        tasa = pedido.tasa_bcv or 36.0
+        tasa = pedido.tasa_bcv
+        if not tasa or tasa <= 0:
+            try:
+                tasa = get_tasa_bcv() or 36.0
+            except Exception:
+                tasa = 36.0
         return pedido.monto_total / tasa
     return pedido.monto_total
 
@@ -374,38 +379,65 @@ def reportes_vista():
 def api_reportes():
     session = Session()
     try:
-        mes = request.args.get('mes')
-        anio = request.args.get('anio')
+        mes_raw = request.args.get('mes')
+        anio_raw = request.args.get('anio')
         
         hoy = datetime.date.today()
-        mes = int(mes) if mes else hoy.month
-        anio = int(anio) if anio else hoy.year
+        anio = int(anio_raw) if anio_raw else hoy.year
         
-        if mes == 1:
-            prev_mes = 12
-            prev_anio = anio - 1
+        filtrar_por_mes = True
+        if not mes_raw or mes_raw == 'todo' or mes_raw == '0' or mes_raw == '':
+            filtrar_por_mes = False
+            mes = 0
         else:
-            prev_mes = mes - 1
-            prev_anio = anio
+            try:
+                mes = int(mes_raw)
+            except ValueError:
+                filtrar_por_mes = False
+                mes = 0
+                
+        if filtrar_por_mes:
+            if mes == 1:
+                prev_mes = 12
+                prev_anio = anio - 1
+            else:
+                prev_mes = mes - 1
+                prev_anio = anio
+                
+            # Consultar Pedidos del mes
+            pedidos_mes = session.query(Pedido).filter(
+                extract('month', Pedido.fecha_creacion) == mes,
+                extract('year', Pedido.fecha_creacion) == anio
+            ).all()
             
-        # Consultar Pedidos del mes
-        pedidos_mes = session.query(Pedido).filter(
-            extract('month', Pedido.fecha_creacion) == mes,
-            extract('year', Pedido.fecha_creacion) == anio
-        ).all()
-        
-        # Consultar Pedidos del mes anterior
-        pedidos_prev = session.query(Pedido).filter(
-            extract('month', Pedido.fecha_creacion) == prev_mes,
-            extract('year', Pedido.fecha_creacion) == prev_anio
-        ).all()
-        
-        # Consultar Órdenes de trabajo del mes (excluyendo borradores)
-        ordenes_mes = session.query(OrdenTrabajo).join(Cliente).filter(
-            extract('month', OrdenTrabajo.fecha_creacion) == mes,
-            extract('year', OrdenTrabajo.fecha_creacion) == anio,
-            OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
-        ).all()
+            # Consultar Pedidos del mes anterior
+            pedidos_prev = session.query(Pedido).filter(
+                extract('month', Pedido.fecha_creacion) == prev_mes,
+                extract('year', Pedido.fecha_creacion) == prev_anio
+            ).all()
+            
+            # Consultar Órdenes de trabajo del mes (excluyendo borradores)
+            ordenes_mes = session.query(OrdenTrabajo).join(Cliente).filter(
+                extract('month', OrdenTrabajo.fecha_creacion) == mes,
+                extract('year', OrdenTrabajo.fecha_creacion) == anio,
+                OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
+            ).all()
+        else:
+            # Consultar Pedidos del año completo
+            pedidos_mes = session.query(Pedido).filter(
+                extract('year', Pedido.fecha_creacion) == anio
+            ).all()
+            
+            # Consultar Pedidos del año anterior completo (para comparación YoY)
+            pedidos_prev = session.query(Pedido).filter(
+                extract('year', Pedido.fecha_creacion) == (anio - 1)
+            ).all()
+            
+            # Consultar Órdenes de trabajo del año completo (excluyendo borradores)
+            ordenes_mes = session.query(OrdenTrabajo).join(Cliente).filter(
+                extract('year', OrdenTrabajo.fecha_creacion) == anio,
+                OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
+            ).all()
         
         total_generado_mes = sum([obtener_total_usd(p) for p in pedidos_mes])
         total_generado_prev = sum([obtener_total_usd(p) for p in pedidos_prev])
@@ -417,31 +449,32 @@ def api_reportes():
         for o in ordenes_mes:
             tipo_trabajo, material = parsear_nombre_proyecto(o.nombre_proyecto)
             
-            # Extraer cantidad y medidas
+            # Extraer cantidad
             cant_match = re.match(r'^\[(\d+)x\]', o.nombre_proyecto)
             cantidad = int(cant_match.group(1)) if cant_match else 1
             
-            medidas_match = re.search(r'\(([^)]+)\)', o.nombre_proyecto)
-            medidas = medidas_match.group(1) if medidas_match else ''
-            
-            area_unit = calcular_area_de_medidas(tipo_trabajo, medidas)
-            area_total = area_unit * cantidad
+            # Calcular ingreso de este artículo individual
+            monto_usd = 0.0
+            if o.pedido:
+                total_ped_usd = obtener_total_usd(o.pedido)
+                num_arts = len(o.pedido.articulos) if o.pedido.articulos else 1
+                monto_usd = total_ped_usd / num_arts
             
             # Agrupar por tipo
             if tipo_trabajo not in por_tipo:
-                por_tipo[tipo_trabajo] = {"cantidad": 0, "area_m2": 0.0}
+                por_tipo[tipo_trabajo] = {"cantidad": 0, "ingresos_usd": 0.0}
             por_tipo[tipo_trabajo]["cantidad"] += cantidad
-            por_tipo[tipo_trabajo]["area_m2"] += area_total
+            por_tipo[tipo_trabajo]["ingresos_usd"] += monto_usd
             
             # Agrupar por material
             if material != "N/A":
                 if material not in por_material:
-                    por_material[material] = {"cantidad": 0, "area_m2": 0.0}
+                    por_material[material] = {"cantidad": 0, "ingresos_usd": 0.0}
                 por_material[material]["cantidad"] += cantidad
-                por_material[material]["area_m2"] += area_total
+                por_material[material]["ingresos_usd"] += monto_usd
                 
             ref_str = o.pedido.referencia if o.pedido else f"JOB-{o.id}"
-            monto_usd = obtener_total_usd(o.pedido) if o.pedido else 0.0
+            monto_pedido_usd = obtener_total_usd(o.pedido) if o.pedido else 0.0
             detalles_ordenes.append({
                 "id": o.id,
                 "nombre_proyecto": o.nombre_proyecto,
@@ -449,7 +482,7 @@ def api_reportes():
                 "fecha": o.fecha_creacion.strftime('%d/%m/%Y'),
                 "estado": o.estado.value,
                 "referencia": ref_str,
-                "monto_pedido_usd": round(monto_usd, 2)
+                "monto_pedido_usd": round(monto_pedido_usd, 2)
             })
             
         # 1. Rendimiento de Diseñadores
@@ -523,6 +556,12 @@ def api_reportes():
         cobros_stats["abonos"] = round(cobros_stats["abonos"], 2)
         cobros_stats["pendiente"] = round(cobros_stats["pendiente"], 2)
 
+        # Obtener la tasa diaria oficial de BCV
+        try:
+            tasa_bcv_dia = get_tasa_bcv() or 36.0
+        except Exception:
+            tasa_bcv_dia = 36.0
+
         # 4. Desglose por métodos de pago
         metodos_estandar = [
             "Efectivo $",
@@ -575,17 +614,30 @@ def api_reportes():
                     if metodo not in desglose_pagos:
                         desglose_pagos[metodo] = {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0}
                         
+                    tasa = p.tasa_bcv
+                    if not tasa or tasa <= 0:
+                        tasa = tasa_bcv_dia
+                        
+                    es_metodo_bs = metodo in ["Pago Móvil / Transferencia", "Efectivo Bs"]
+                    es_metodo_usd = metodo in ["Zelle", "Efectivo $"]
+                    
                     if p.moneda == 'Bs':
-                        tasa = p.tasa_bcv or 36.0
-                        monto_usd = monto_original / tasa if tasa > 0 else 0.0
+                        monto_bs = monto_original
+                        monto_usd = monto_bs / tasa if tasa > 0 else 0.0
                     else:
                         monto_usd = monto_original
+                        monto_bs = monto_usd * tasa
                         
                     desglose_pagos[metodo]["usd_eq"] += monto_usd
-                    if p.moneda == 'Bs':
-                        desglose_pagos[metodo]["original_bs"] += monto_original
+                    if es_metodo_bs:
+                        desglose_pagos[metodo]["original_bs"] += monto_bs
+                    elif es_metodo_usd:
+                        desglose_pagos[metodo]["original_usd"] += monto_usd
                     else:
-                        desglose_pagos[metodo]["original_usd"] += monto_original
+                        if p.moneda == 'Bs':
+                            desglose_pagos[metodo]["original_bs"] += monto_bs
+                        else:
+                            desglose_pagos[metodo]["original_usd"] += monto_usd
 
         desglose_list = []
         for met in metodos_estandar:
@@ -610,11 +662,11 @@ def api_reportes():
         if total_generado_prev > 0:
             crecimiento = ((total_generado_mes - total_generado_prev) / total_generado_prev) * 100
             
-        # Redondear áreas a 2 decimales para la visualización
+        # Redondear ingresos a 2 decimales para la visualización
         for k in por_tipo:
-            por_tipo[k]["area_m2"] = round(por_tipo[k]["area_m2"], 2)
+            por_tipo[k]["ingresos_usd"] = round(por_tipo[k]["ingresos_usd"], 2)
         for k in por_material:
-            por_material[k]["area_m2"] = round(por_material[k]["area_m2"], 2)
+            por_material[k]["ingresos_usd"] = round(por_material[k]["ingresos_usd"], 2)
             
         # Obtener la tasa diaria oficial de BCV
         try:
