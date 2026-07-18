@@ -185,6 +185,16 @@ def vista_dashboard():
                 saldo = None
                 monto_total_val = None
             
+            import hmac
+            import hashlib
+            from flask import current_app
+            public_url = ""
+            if o.pedido_id:
+                key = current_app.config['SECRET_KEY']
+                h = hmac.new(key.encode('utf-8'), str(o.pedido_id).encode('utf-8'), hashlib.sha256)
+                token = h.hexdigest()[:16]
+                public_url = f"/publico/pedido/{o.pedido_id}/{token}"
+
             ordenes_data.append({
                 "id": o.id,
                 "nombre_proyecto": o.nombre_proyecto,
@@ -208,7 +218,8 @@ def vista_dashboard():
                 "ocultar_precio": ocultar_precio,
                 "requiere_cotizacion": o.requiere_cotizacion,
                 "cliente_telefono": o.cliente.telefono if o.cliente else "",
-                "cliente_contacto": o.cliente.contacto_nombre or o.cliente.nombre_empresa if o.cliente and (o.cliente.contacto_nombre or o.cliente.nombre_empresa) else "Cliente"
+                "cliente_contacto": o.cliente.contacto_nombre or o.cliente.nombre_empresa if o.cliente and (o.cliente.contacto_nombre or o.cliente.nombre_empresa) else "Cliente",
+                "public_url": public_url
             })
             
         return render_template('dashboard.html', ordenes=ordenes_data, disenadores=disenadores_data)

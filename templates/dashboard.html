@@ -78,7 +78,16 @@
                         <div class="absolute left-0 top-0 bottom-0 w-1" :class="orden.tiene_incidencia ? 'bg-amber-500' : column.accentColor"></div>
                         
                         <div class="flex justify-between items-start mb-2 pl-2">
-                            <span class="text-xs font-mono font-semibold text-white bg-blue-600/80 px-2 py-1 rounded" x-text="'PEDIDO #' + orden.pedido_id" title="Pedido Maestro"></span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-mono font-semibold text-white bg-blue-600/80 px-2 py-1 rounded" x-text="'PEDIDO #' + orden.pedido_id" title="Pedido Maestro"></span>
+                                <template x-if="orden.public_url">
+                                    <button @click.stop="navigator.clipboard.writeText(window.location.origin + orden.public_url); alert('¡Enlace de seguimiento copiado!')" 
+                                            class="p-1 rounded bg-slate-900/50 hover:bg-slate-800 text-blue-300 hover:text-white transition-colors" 
+                                            title="Copiar enlace de seguimiento público">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-5 10h5m-5 4h5m-9-4h.01M9 16h.01"></path></svg>
+                                    </button>
+                                </template>
+                            </div>
                             <div class="flex flex-col items-end">
                                 <span class="text-xs font-medium text-slate-400 bg-slate-900/50 px-2 py-1 rounded-full" x-text="orden.fecha"></span>
                                 <template x-if="orden.es_arrastrada">
