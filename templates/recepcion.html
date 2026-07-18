@@ -569,7 +569,7 @@
             <!-- QR Image wrapper -->
             <div class="bg-white p-3 rounded-xl inline-block shadow-md border border-slate-700/30 mb-6">
                 <template x-if="successPublicUrl">
-                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(window.location.origin + successPublicUrl)" 
+                    <img :src="'/api/qrcode?data=' + encodeURIComponent(window.location.origin + successPublicUrl)" 
                          class="w-48 h-48 mx-auto" 
                          alt="Código QR de Seguimiento">
                 </template>

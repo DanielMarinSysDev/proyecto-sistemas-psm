@@ -4,7 +4,7 @@
 # Este archivo es propiedad exclusiva de Daniel Marin.
 # Queda prohibida su reproducción o distribución sin autorización.
 # ----------------------------------------------------------------------
-from flask import Flask, render_template, redirect, request
+from flask import Flask, render_template, redirect, request, send_file, abort
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -66,6 +66,25 @@ def health_check():
     y para monitorear el estado básico de la aplicación.
     """
     return {"status": "healthy", "service": "TaskCore"}, 200
+
+
+@app.route('/api/qrcode')
+def get_qrcode():
+    """Genera dinámicamente un código QR de forma 100% local sin depender de APIs externas."""
+    data = request.args.get('data', '')
+    if not data:
+        abort(400)
+    import qrcode
+    import io
+    qr = qrcode.QRCode(version=1, box_size=10, border=1)
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    img_io = io.BytesIO()
+    img.save(img_io, 'PNG')
+    img_io.seek(0)
+    return send_file(img_io, mimetype='image/png')
 
 
 # --- RUTA PÚBLICA PARA SEGUIMIENTO DE PEDIDOS POR EL CLIENTE ---
