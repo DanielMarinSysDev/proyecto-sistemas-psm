@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Orden - TaskCore</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/TaskCore_Isotipo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], },
+                    colors: {
+                        blue: {
+                            500: '#0278D2',
+                            600: '#025fa6',
+                            700: '#014980',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b1329;
+            background-image: radial-gradient(circle at 50% 50%, #101f42 0%, #0b1329 100%);
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="text-slate-200 antialiased min-h-screen py-8 px-4 flex flex-col items-center">
+
+    <!-- Top Logo -->
+    <div class="flex items-center gap-3 mb-8">
+        <img src="/static/img/TaskCore_Isotipo.svg" alt="TaskCore" class="w-10 h-10">
+        <span class="text-2xl font-bold tracking-tight text-white font-logo">Task<span class="text-blue-500">Core</span></span>
+    </div>
+
+    <div class="w-full max-w-2xl space-y-6" x-data="{
+        copyText(text) {
+            navigator.clipboard.writeText(text);
+            alert('¡Copiado al portapapeles!');
+        }
+    }">
+
+        <!-- Order Header Card -->
+        <div class="glass-panel p-6 rounded-2xl shadow-xl border border-slate-700/40 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl"></div>
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-blue-400">Recibo / Orden de Servicio</span>
+                    <h2 class="text-2xl font-bold text-white mt-1">Ref: {{ pedido.referencia or 'N/A' }}</h2>
+                    <p class="text-xs text-slate-400 mt-1">Registrado el: {{ pedido.fecha_creacion.strftime('%d/%m/%Y a las %I:%M %p') }}</p>
+                </div>
+                
+                <div class="flex flex-col items-start md:items-end">
+                    <span class="text-xs text-slate-400">Cliente</span>
+                    <span class="text-base font-semibold text-slate-100 mt-0.5">{{ pedido.cliente.nombre_empresa }}</span>
+                    {% if pedido.cliente.contacto_nombre %}
+                    <span class="text-xs text-slate-400">{{ pedido.cliente.contacto_nombre }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment & Billing Card -->
+        <div class="glass-panel p-6 rounded-2xl shadow-xl border border-slate-700/40 space-y-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-20c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"></path>
+                </svg>
+                Información de Pago
+            </h3>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60">
+                <div>
+                    <span class="block text-xs text-slate-450 uppercase font-semibold">Total a Pagar</span>
+                    <span class="text-lg font-bold text-white">${{ "%.2f"|format(pedido.monto_total or 0.0) }} USD</span>
+                </div>
+                
+                <div>
+                    <span class="block text-xs text-slate-450 uppercase font-semibold">Estado de Pago</span>
+                    {% if pedido.estado_pago == 'Cancelado' %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-1">
+                        Cancelado (Pagado)
+                    </span>
+                    {% elif pedido.estado_pago == 'Abono' %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 mt-1">
+                        Abono Parcial
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mt-1">
+                        Por Cancelar
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="col-span-2 sm:col-span-1">
+                    <span class="block text-xs text-slate-450 uppercase font-semibold">Detalles / Historial</span>
+                    <p class="text-xs text-slate-350 mt-1 leading-relaxed">{{ pedido.monto_abono or 'Pendiente de pago.' }}</p>
+                </div>
+            </div>
+
+            <!-- Coordenadas Bancarias (if not paid) -->
+            {% if pedido.estado_pago != 'Cancelado' %}
+            <div class="space-y-3 mt-2">
+                <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Cuentas y Métodos de Pago disponibles:</span>
+                
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-semibold text-emerald-400">Zelle</span>
+                            <span class="text-xs text-slate-300 mt-0.5">{{ instrucciones.zelle }}</span>
+                        </div>
+                        <button type="button" @click="copyText('{{ instrucciones.zelle }}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2.5 py-1.5 rounded transition-colors font-medium">Copiar</button>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-semibold text-emerald-400">Pago Móvil</span>
+                            <span class="text-xs text-slate-300 mt-0.5">{{ instrucciones.pago_movil }}</span>
+                        </div>
+                        <button type="button" @click="copyText('{{ instrucciones.pago_movil }}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2.5 py-1.5 rounded transition-colors font-medium">Copiar</button>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-semibold text-emerald-400">Transferencia Bancaria</span>
+                            <span class="text-xs text-slate-300 mt-0.5">{{ instrucciones.transferencia }}</span>
+                        </div>
+                        <button type="button" @click="copyText('{{ instrucciones.transferencia }}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2.5 py-1.5 rounded transition-colors font-medium">Copiar</button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Live Work Order Status Tracking -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                </svg>
+                Estatus de Dispositivos / Servicios
+            </h3>
+            
+            {% for articulo in pedido.articulos %}
+            <div class="glass-panel p-6 rounded-2xl shadow-xl border border-slate-700/40 space-y-4">
+                
+                <!-- Article Header -->
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <div class="flex-1">
+                        <h4 class="text-base font-bold text-white">{{ articulo.nombre_proyecto }}</h4>
+                        {% if articulo.especificaciones %}
+                        <p class="text-xs text-slate-400 mt-1 whitespace-pre-line leading-relaxed">{{ articulo.especificaciones }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Step progress line visualizer -->
+                <div class="pt-2">
+                    <span class="text-xs font-semibold text-slate-450 uppercase block mb-3">Estatus del Trabajo</span>
+                    
+                    <!-- Progress Grid -->
+                    <div class="grid grid-cols-4 relative text-center">
+                        
+                        <!-- Line background -->
+                        <div class="absolute top-4 left-[12.5%] right-[12.5%] h-0.5 bg-slate-800 z-0"></div>
+                        
+                        <!-- Line fill (based on state) -->
+                        <div class="absolute top-4 left-[12.5%] h-0.5 bg-blue-500 z-0 transition-all duration-500"
+                             style="width: {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir'] %}33.33%{% elif articulo.estado.value in ['Producción'] %}66.66%{% elif articulo.estado.value in ['Listo Entregar', 'Entregado'] %}75%{% else %}0%{% endif %};">
+                        </div>
+
+                        <!-- Step 1: Recepción -->
+                        <div class="flex flex-col items-center z-10">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
+                                bg-slate-900 border-blue-500 text-blue-400">
+                                1
+                            </div>
+                            <span class="text-[10px] md:text-xs font-semibold text-blue-400 mt-2">Recepción</span>
+                        </div>
+
+                        <!-- Step 2: Diagnóstico/Diseño -->
+                        <div class="flex flex-col items-center z-10">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
+                                {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir', 'Producción', 'Listo Entregar', 'Entregado'] %}
+                                bg-slate-900 border-blue-500 text-blue-400
+                                {% else %}
+                                bg-slate-950 border-slate-800 text-slate-600
+                                {% endif %}">
+                                2
+                            </div>
+                            <span class="text-[10px] md:text-xs font-semibold mt-2
+                                {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir', 'Producción', 'Listo Entregar', 'Entregado'] %}
+                                text-blue-450
+                                {% else %}
+                                text-slate-600
+                                {% endif %}">Servicio Técnico</span>
+                        </div>
+
+                        <!-- Step 3: En Proceso -->
+                        <div class="flex flex-col items-center z-10">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
+                                {% if articulo.estado.value in ['Producción', 'Listo Entregar', 'Entregado'] %}
+                                bg-slate-900 border-blue-500 text-blue-400
+                                {% else %}
+                                bg-slate-950 border-slate-800 text-slate-600
+                                {% endif %}">
+                                3
+                            </div>
+                            <span class="text-[10px] md:text-xs font-semibold mt-2
+                                {% if articulo.estado.value in ['Producción', 'Listo Entregar', 'Entregado'] %}
+                                text-blue-450
+                                {% else %}
+                                text-slate-600
+                                {% endif %}">Reparación</span>
+                        </div>
+
+                        <!-- Step 4: Listo / Entregado -->
+                        <div class="flex flex-col items-center z-10">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
+                                {% if articulo.estado.value in ['Listo Entregar', 'Entregado'] %}
+                                bg-emerald-500 border-emerald-500 text-slate-950
+                                {% else %}
+                                bg-slate-950 border-slate-800 text-slate-600
+                                {% endif %}">
+                                ✓
+                            </div>
+                            <span class="text-[10px] md:text-xs font-semibold mt-2
+                                {% if articulo.estado.value in ['Listo Entregar', 'Entregado'] %}
+                                text-emerald-400
+                                {% else %}
+                                text-slate-600
+                                {% endif %}">Listo</span>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-xs text-slate-500 pt-4">
+            <p>© 2026 Daniel Marin SysDev. Todos los derechos reservados.</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

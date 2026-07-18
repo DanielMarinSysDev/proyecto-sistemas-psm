@@ -329,11 +329,20 @@ def crear_orden_trabajo():
         
         session.commit()
         
+        import hmac
+        import hashlib
+        from flask import current_app
+        key = current_app.config['SECRET_KEY']
+        h = hmac.new(key.encode('utf-8'), str(nuevo_pedido.id).encode('utf-8'), hashlib.sha256)
+        token = h.hexdigest()[:16]
+        public_url = f"/publico/pedido/{nuevo_pedido.id}/{token}"
+        
         return jsonify({
             "mensaje": "Pedido generado exitosamente",
             "pedido_id": nuevo_pedido.id,
             "articulos_creados": len(articulos),
-            "ruta_archivos": nuevo_pedido.ruta_carpeta
+            "ruta_archivos": nuevo_pedido.ruta_carpeta,
+            "public_url": public_url
         }), 201
         
     except Exception as e:

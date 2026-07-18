@@ -68,6 +68,49 @@ def health_check():
     return {"status": "healthy", "service": "TaskCore"}, 200
 
 
+# --- RUTA PÚBLICA PARA SEGUIMIENTO DE PEDIDOS POR EL CLIENTE ---
+import hmac
+import hashlib
+
+def generar_token_pedido(pedido_id, secret_key):
+    h = hmac.new(secret_key.encode('utf-8'), str(pedido_id).encode('utf-8'), hashlib.sha256)
+    return h.hexdigest()[:16]
+
+@app.route('/publico/pedido/<int:pedido_id>/<token>')
+def ver_pedido_publico(pedido_id, token):
+    # Verificar firma de seguridad
+    expected_token = generar_token_pedido(pedido_id, app.config['SECRET_KEY'])
+    if not hmac.compare_digest(expected_token, token):
+        return render_template('public_error.html', mensaje="El enlace de seguimiento es inválido o ha expirado."), 403
+        
+    from database_models import engine, Pedido, Cliente, OrdenTrabajo, Configuracion
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    try:
+        pedido = session.query(Pedido).filter_by(id=pedido_id).first()
+        if not pedido:
+            return render_template('public_error.html', mensaje="El pedido especificado no existe."), 404
+            
+        # Obtener coordenadas de pago globales
+        cfg_zelle = session.query(Configuracion).filter_by(clave='pago_instrucciones_zelle').first()
+        cfg_movil = session.query(Configuracion).filter_by(clave='pago_instrucciones_movil').first()
+        cfg_trans = session.query(Configuracion).filter_by(clave='pago_instrucciones_transferencia').first()
+        
+        instrucciones = {
+            'zelle': cfg_zelle.valor if cfg_zelle else 'Zelle: pagos@taskcore.com (TaskCore LLC)',
+            'pago_movil': cfg_movil.valor if cfg_movil else 'Pago Móvil: Banesco (0134) - RIF: J-40012345-6 - Tel: 0424-1234567',
+            'transferencia': cfg_trans.valor if cfg_trans else 'Transferencia: Banco Mercantil - Cta Corriente: 0105-0012-34-5678901234 - Beneficiario: TaskCore, C.A.'
+        }
+        
+        return render_template('public_pedido.html', pedido=pedido, instrucciones=instrucciones)
+    except Exception as e:
+        return render_template('public_error.html', mensaje=f"Error interno del servidor: {e}"), 500
+    finally:
+        session.close()
+
+
+
 if __name__ == '__main__':
     # Asegurar e inicializar estructura de carpetas
     try:

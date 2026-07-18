@@ -79,8 +79,7 @@
             </div>
             <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Crear Orden de Trabajo</h2>
         </div>
-        
-        <form @submit.prevent="submitOrden(false)" class="space-y-4 relative z-10">
+           <form @submit.prevent="submitOrden(false)" class="space-y-4 relative z-10">
             <!-- Form Step Wizard Navigation -->
             <div class="flex border-b border-slate-700/50 mb-6 gap-2 no-print">
                 <button type="button" @click="currentStep = 1" 
@@ -88,19 +87,19 @@
                         class="flex-1 pb-3 text-center border-b-2 text-sm transition-all focus:outline-none flex items-center justify-center gap-2">
                     <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs"
                           :class="currentStep === 1 ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-450'">1</span>
-                    <span>Cliente y Pago</span>
+                    <span>Dispositivos y Servicios</span>
                 </button>
                 <button type="button" @click="siguientePaso()" 
                         :class="currentStep === 2 ? 'border-blue-500 text-blue-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-355'" 
                         class="flex-1 pb-3 text-center border-b-2 text-sm transition-all focus:outline-none flex items-center justify-center gap-2">
                     <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs"
                           :class="currentStep === 2 ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-455'">2</span>
-                    <span>Dispositivos y Servicios</span>
+                    <span>Cliente y Pago</span>
                 </button>
             </div>
 
-            <!-- Paso 1: Cliente y Pago -->
-            <div x-show="currentStep === 1" class="space-y-4">
+            <!-- Paso 2: Cliente y Pago -->
+            <div x-show="currentStep === 2" class="space-y-4" x-transition>
                 <div>
                 <label class="block text-sm font-medium text-slate-300 mb-1">Cliente *</label>
                 <div class="flex gap-2">
@@ -232,16 +231,130 @@
                         <option value="Otro">Otro</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Referencia / Notas</label>
-                    <input x-model="ordenForm.notas_pago" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: Ref 12345">
                 </div>
             </div>
+
+            <!-- Datos de Cuentas de Pago -->
+            <div x-data="{ 
+                     open: false,
+                     editMode: false,
+                     instrucciones: {
+                         zelle: 'Cargando...',
+                         pago_movil: 'Cargando...',
+                         transferencia: 'Cargando...'
+                     },
+                     async loadInstrucciones() {
+                         try {
+                             let r1 = await fetch('/api/configuracion/pago_instrucciones_zelle');
+                             let d1 = await r1.json();
+                             this.instrucciones.zelle = d1.valor || 'Zelle: pagos@taskcore.com (TaskCore LLC)';
+                             
+                             let r2 = await fetch('/api/configuracion/pago_instrucciones_movil');
+                             let d2 = await r2.json();
+                             this.instrucciones.pago_movil = d2.valor || 'Pago Móvil: Banesco (0134) - RIF: J-40012345-6 - Tel: 0424-1234567';
+                             
+                             let r3 = await fetch('/api/configuracion/pago_instrucciones_transferencia');
+                             let d3 = await r3.json();
+                             this.instrucciones.transferencia = d3.valor || 'Transferencia: Banco Mercantil - Cta Corriente: 0105-0012-34-5678901234 - Beneficiario: TaskCore, C.A.';
+                         } catch(e) {
+                             console.error('Error cargando instrucciones de pago', e);
+                         }
+                     },
+                     async saveInstrucciones() {
+                         try {
+                             await fetch('/api/configuracion/pago_instrucciones_zelle', {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ valor: this.instrucciones.zelle })
+                             });
+                             await fetch('/api/configuracion/pago_instrucciones_movil', {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ valor: this.instrucciones.pago_movil })
+                             });
+                             await fetch('/api/configuracion/pago_instrucciones_transferencia', {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ valor: this.instrucciones.transferencia })
+                             });
+                             this.editMode = false;
+                             alert('¡Instrucciones de pago actualizadas en el servidor!');
+                         } catch(e) {
+                             alert('Error al guardar instrucciones en el servidor');
+                         }
+                     },
+                     copyText(text) {
+                         navigator.clipboard.writeText(text);
+                         alert('¡Copiado al portapapeles!');
+                     }
+                 }"
+                 x-init="loadInstrucciones()"
+                 class="mt-4 bg-slate-900/40 border border-slate-700/50 rounded-xl p-4">
+                
+                <div class="flex items-center justify-between cursor-pointer select-none" @click="open = !open">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <span class="text-sm font-semibold text-slate-200">Ver Datos y Cuentas de Pago</span>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="open ? 'transform rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+
+                <div x-show="open" x-transition class="mt-3 pt-3 border-t border-slate-800/80 space-y-3">
+                    <!-- Read-only view -->
+                    <div x-show="!editMode" class="space-y-2">
+                        <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-lg border border-slate-850">
+                            <span class="text-xs text-slate-350 font-medium" x-text="instrucciones.zelle"></span>
+                            <button type="button" @click="copyText(instrucciones.zelle)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2 py-1 rounded">Copiar</button>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-lg border border-slate-850">
+                            <span class="text-xs text-slate-350 font-medium" x-text="instrucciones.pago_movil"></span>
+                            <button type="button" @click="copyText(instrucciones.pago_movil)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2 py-1 rounded">Copiar</button>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-lg border border-slate-850">
+                            <span class="text-xs text-slate-350 font-medium" x-text="instrucciones.transferencia"></span>
+                            <button type="button" @click="copyText(instrucciones.transferencia)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2 py-1 rounded">Copiar</button>
+                        </div>
+                        
+                        {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+                        <div class="pt-1 text-right">
+                            <button type="button" @click="editMode = true" class="text-xs bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600/40 text-blue-300 px-3 py-1.5 rounded-md font-semibold transition-colors">
+                                Editar Cuentas
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Edit view (Admins/Gerencia only) -->
+                    {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+                    <div x-show="editMode" class="space-y-3 pt-1">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Datos Zelle</label>
+                            <input type="text" x-model="instrucciones.zelle" class="w-full bg-slate-950 border border-slate-850 rounded px-3 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Datos Pago Móvil</label>
+                            <input type="text" x-model="instrucciones.pago_movil" class="w-full bg-slate-950 border border-slate-850 rounded px-3 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Datos Transferencia</label>
+                            <input type="text" x-model="instrucciones.transferencia" class="w-full bg-slate-950 border border-slate-850 rounded px-3 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button type="button" @click="editMode = false" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-350 px-3 py-1.5 rounded-md transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="button" @click="saveInstrucciones()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-md transition-colors">
+                                Guardar Cuentas
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            </div> <!-- Cierre de Paso 1 -->
+            </div> <!-- Cierre de Paso 2 (Cliente y Pago) -->
             
-            <!-- Paso 2: Dispositivos y Servicios -->
-            <div x-show="currentStep === 2" class="space-y-4" x-transition>
+            <!-- Paso 1: Dispositivos y Servicios -->
+            <div x-show="currentStep === 1" class="space-y-4" x-transition>
                 <div class="mt-4 border-t border-slate-700/50 pt-4">
                 <h3 class="text-sm font-medium text-slate-300 mb-3 flex justify-between items-center">
                     Artículos del Pedido
@@ -432,6 +545,54 @@
         </form>
     </div>
 
+    <!-- Modal de Éxito y Código QR Público -->
+    <div x-show="showSuccessModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+         style="display: none;"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         @keydown.escape.window="showSuccessModal = false">
+        
+        <div class="bg-slate-900 border border-slate-700/60 rounded-2xl p-6 w-full max-w-md shadow-2xl relative text-center" @click.away="showSuccessModal = false">
+            <!-- Icon -->
+            <div class="mx-auto w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            
+            <h3 class="text-xl font-bold text-white mb-2">¡Pedido Registrado!</h3>
+            <p class="text-xs text-slate-400 mb-6">El cliente puede escanear este código QR para ver los detalles, estatus en vivo del servicio y las cuentas de pago.</p>
+            
+            <!-- QR Image wrapper -->
+            <div class="bg-white p-3 rounded-xl inline-block shadow-md border border-slate-700/30 mb-6">
+                <template x-if="successPublicUrl">
+                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(window.location.origin + successPublicUrl)" 
+                         class="w-48 h-48 mx-auto" 
+                         alt="Código QR de Seguimiento">
+                </template>
+            </div>
+            
+            <!-- Actions -->
+            <div class="space-y-2">
+                <button type="button" 
+                        @click="copyText(window.location.origin + successPublicUrl)" 
+                        class="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors text-sm shadow-md shadow-blue-500/20">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-5 10h5m-5 4h5m-9-4h.01M9 16h.01"></path></svg>
+                    Copiar Enlace de Seguimiento
+                </button>
+                
+                <button type="button" 
+                        @click="showSuccessModal = false" 
+                        class="w-full inline-flex justify-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition-colors text-sm border border-slate-700/50">
+                    Listo / Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -444,9 +605,28 @@
             
             siguientePaso() {
                 if (this.currentStep === 1) {
-                    if (!this.ordenForm.cliente_id) {
-                        alert("Por favor seleccione un cliente antes de continuar.");
+                    if (this.ordenForm.articulos.length === 0) {
+                        alert("Por favor añada al menos un artículo/dispositivo.");
                         return;
+                    }
+                    for (let i = 0; i < this.ordenForm.articulos.length; i++) {
+                        const art = this.ordenForm.articulos[i];
+                        if (!art.tipo_trabajo) {
+                            alert(`Debe seleccionar la categoría para el artículo #${i + 1}.`);
+                            return;
+                        }
+                        if (!art.material) {
+                            alert(`Debe seleccionar el servicio/repuesto para el artículo #${i + 1}.`);
+                            return;
+                        }
+                        if (!art.cantidad || art.cantidad < 1) {
+                            alert(`La cantidad para el artículo #${i + 1} debe ser mayor o igual a 1.`);
+                            return;
+                        }
+                        if (!art.specs) {
+                            alert(`Debe ingresar los detalles y falla para el artículo #${i + 1}.`);
+                            return;
+                        }
                     }
                     this.currentStep = 2;
                 }
@@ -491,6 +671,9 @@
             ordenError: false,
             ordenMsg: '',
             ordenRuta: '',
+            showSuccessModal: false,
+            successPublicUrl: '',
+            successPedidoId: '',
             
             async generarReferencia() {
                 try {
@@ -692,34 +875,36 @@
             
             async submitOrden(esBorrador = false) {
                 // Validaciones previas a la creación
-                if (!this.ordenForm.cliente_id) {
-                    alert("Por favor seleccione un cliente.");
-                    this.currentStep = 1;
-                    return;
-                }
                 if (!esBorrador) {
+                    // Validar artículos (Paso 1)
                     for (let i = 0; i < this.ordenForm.articulos.length; i++) {
                         const art = this.ordenForm.articulos[i];
                         if (!art.tipo_trabajo) {
                             alert(`Debe seleccionar la categoría para el artículo #${i + 1}.`);
-                            this.currentStep = 2;
+                            this.currentStep = 1;
                             return;
                         }
                         if (!art.material) {
                             alert(`Debe seleccionar el servicio/repuesto para el artículo #${i + 1}.`);
-                            this.currentStep = 2;
+                            this.currentStep = 1;
                             return;
                         }
                         if (!art.cantidad || art.cantidad < 1) {
                             alert(`La cantidad para el artículo #${i + 1} debe ser mayor o igual a 1.`);
-                            this.currentStep = 2;
+                            this.currentStep = 1;
                             return;
                         }
                         if (!art.specs) {
                             alert(`Debe ingresar los detalles y falla para el artículo #${i + 1}.`);
-                            this.currentStep = 2;
+                            this.currentStep = 1;
                             return;
                         }
+                    }
+                    // Validar cliente (Paso 2)
+                    if (!this.ordenForm.cliente_id) {
+                        alert("Por favor seleccione un cliente.");
+                        this.currentStep = 2;
+                        return;
                     }
                 }
                 
@@ -757,9 +942,13 @@
                             this.ordenMsg = `¡Borrador de Pedido #${data.pedido_id} guardado con éxito!`;
                         } else {
                             this.ordenMsg = `¡Pedido #${data.pedido_id} generado con éxito (${data.articulos_creados} artículos)!`;
+                            this.successPublicUrl = data.public_url || '';
+                            this.successPedidoId = data.pedido_id || '';
+                            this.showSuccessModal = true;
                         }
                         this.ordenRuta = data.ruta_archivos;
                         this.ordenForm = { cliente_id: '', referencia: '', monto_total: '', moneda: 'USD', tasa_bcv: '', estado_pago: 'Por Cancelar', monto_abono: '', metodo_pago: '', notas_pago: '', usar_saldo_favor: false, ocultar_precio_ventas: false, motivo_sin_costo: '', articulos: [ {tipo_trabajo: '', material: '', cantidad: 1, specs: '', enlace_recursos: '', disenador_id: '', precio_estimado: 0.0, requiere_cotizacion_especial: false} ] };
+                        this.currentStep = 1; // Volver al paso 1 para la siguiente orden
                     } else {
                         this.ordenError = true;
                         this.ordenMsg = data.error;
