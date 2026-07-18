@@ -5,45 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seguimiento de Orden - TaskCore</title>
     <link rel="icon" type="image/svg+xml" href="/static/img/TaskCore_Isotipo.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Prevent theme flash -->
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], },
-                    colors: {
-                        blue: {
-                            500: '#0278D2',
-                            600: '#025fa6',
-                            700: '#014980',
-                        }
-                    }
-                }
-            }
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
         }
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom stylesheet for theme styles -->
+    <link rel="stylesheet" href="/static/css/styles.css?v=1.0.3">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body {
-            background-color: #0b1329;
-            background-image: radial-gradient(circle at 50% 50%, #101f42 0%, #0b1329 100%);
+            background-color: var(--slate-50) !important;
+            color: var(--slate-200) !important;
+            transition: background-color 0.3s, color 0.3s;
         }
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.45);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        .custom-glass-card {
+            background-color: var(--glass-panel-bg);
+            border: 1px solid var(--glass-panel-border);
         }
     </style>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="text-slate-200 antialiased min-h-screen py-8 px-4 flex flex-col items-center">
+<body class="antialiased min-h-screen py-8 px-4 flex flex-col items-center relative">
 
-    <!-- Top Logo -->
+    <!-- Theme Toggle (Top Right) -->
+    <button onclick="toggleTheme()" class="absolute top-4 right-4 z-20 text-[var(--slate-400)] hover:text-[var(--slate-200)] p-2 rounded-lg bg-[var(--slate-800)] border border-[var(--slate-300)] transition-colors" title="Cambiar tema">
+        <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z"></path>
+        </svg>
+        <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+    </button>
+
+    <!-- Top Logo (Inline SVG matching main system) -->
     <div class="flex items-center gap-3 mb-8">
-        <img src="/static/img/TaskCore_Isotipo.svg" alt="TaskCore" class="w-10 h-10">
-        <span class="text-2xl font-bold tracking-tight text-white font-logo">Task<span class="text-blue-500">Core</span></span>
+        <div class="w-10 h-10 text-[var(--brand-blue)]">
+            <svg class="w-full h-full" viewBox="0 0 478 549.31" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M473.75,134.22l-93.08-53.74-8.5,14.72,88.83,51.29v102.58h17v-107.48c0-3.04-1.62-5.84-4.25-7.36Z"/>
+                <path d="M461,402.83l-88.83,51.29,8.5,14.72,93.08-53.74c2.63-1.52,4.25-4.32,4.25-7.36v-107.48h-17v102.58Z"/>
+                <path d="M239,531l-88.83-51.29-8.5,14.72,93.08,53.74c1.32.76,2.78,1.14,4.25,1.14s2.93-.38,4.25-1.14l93.08-53.74-8.5-14.72-88.83,51.29Z"/>
+                <path d="M17,300.25H0v107.48c0,3.04,1.62,5.84,4.25,7.36l93.08,53.74,8.5-14.72-88.83-51.29v-102.58Z"/>
+                <path d="M17,146.48l88.83-51.29-8.5-14.72L4.25,134.22c-2.63,1.52-4.25,4.32-4.25,7.36v107.48h17v-102.58Z"/>
+                <path d="M239,18.31l88.83,51.29,8.5-14.72L243.25,1.14c-2.63-1.52-5.87-1.52-8.5,0l-93.08,53.74,8.5,14.72,88.83-51.29Z"/>
+                <path d="M418.19,378.11c10.96-18.98,4.43-43.34-14.55-54.3-9.2-5.31-19.91-6.72-30.16-3.97-7.46,2-14.02,6.03-19.09,11.62l-49.72-28.71v-56.18l49.72-28.71c5.07,5.59,11.63,9.62,19.09,11.62,3.42.92,6.9,1.37,10.35,1.37,6.89,0,13.69-1.81,19.81-5.34,9.2-5.31,15.77-13.88,18.52-24.14,2.75-10.26,1.34-20.97-3.97-30.16-10.96-18.98-35.32-25.51-54.3-14.55-9.2,5.31-15.77,13.88-18.52,24.14-2,7.46-1.79,15.16.52,22.34l-49.72,28.71-48.66-28.09v-57.43c17.85-3.9,31.25-19.83,31.25-38.83,0-21.92-17.83-39.75-39.75-39.75s-39.75,17.83-39.75,39.75c0,19,13.4,34.92,31.25,38.83v57.43l-48.66,28.09-49.73-28.71c2.3-7.18,2.51-14.88.51-22.34-2.75-10.26-9.33-18.83-18.52-24.14s-19.91-6.72-30.16-3.97c-10.26,2.75-18.83,9.33-24.14,18.52s-6.72,19.91-3.97,30.16c2.75,10.26,9.33,18.83,18.52,24.14,6.12,3.54,12.92,5.34,19.81,5.34,3.45,0,6.93-.45,10.35-1.37,7.46-2,14.02-6.03,19.09-11.62l49.72,28.71v56.18l-49.72,28.71c-5.07-5.59-11.63-9.62-19.09-11.62-10.26-2.75-20.97-1.34-30.16,3.97-18.98,10.96-25.51,35.32-14.55,54.3,5.31,9.2,13.88,15.77,24.14,18.52,3.42.92,6.9,1.37,10.35,1.37,6.89,0,13.69-1.81,19.81-5.34,9.2-5.31,15.77-13.88,18.52-24.14,2-7.46,1.79-15.16-.51-22.34l49.72-28.71,48.66,28.09v57.43c-17.85,3.9-31.25,19.83-31.25,38.83,0,21.92,17.83,39.75,39.75,39.75s39.75-17.83,39.75-39.75c0-19-13.4-34.92-31.25-38.83v-57.43l48.66-28.09,49.72,28.71c-2.3,7.18-2.51,14.88-.52,22.34,2.75,10.26,9.33,18.83,18.52,24.14,6.25,3.61,13.07,5.32,19.81,5.32,13.75,0,27.14-7.13,34.49-19.87ZM372.39,171.37c3.57-2.06,7.48-3.04,11.34-3.04,7.87,0,15.53,4.08,19.74,11.37,3.04,5.26,3.85,11.39,2.27,17.26-1.57,5.87-5.34,10.78-10.6,13.81-5.26,3.04-11.39,3.84-17.26,2.27-5.87-1.57-10.78-5.34-13.81-10.6-6.27-10.86-2.54-24.81,8.33-31.08ZM216.25,107.5c0-12.55,10.21-22.75,22.75-22.75s22.75,10.21,22.75,22.75-10.21,22.75-22.75,22.75-22.75-10.21-22.75-22.75ZM100.12,213.05c-5.87,1.57-12,.77-17.26-2.27-5.26-3.04-9.03-7.94-10.6-13.81-1.57-5.87-.77-12,2.27-17.26,3.04-5.26,7.94-9.03,13.81-10.6,1.96-.52,3.95-.78,5.93-.78,3.94,0,7.83,1.03,11.34,3.06,5.26,3.04,9.03,7.94,10.6,13.81,1.57,5.87.77,12-2.27,17.26-3.04,5.26-7.94,9.03-13.81,10.6ZM116.21,364.12c-1.57,5.87-5.34,10.78-10.6,13.81-5.26,3.04-11.39,3.84-17.26,2.27-5.87-1.57-10.78-5.34-13.81-10.6-6.27-10.87-2.54-24.81,8.33-31.08,3.51-2.02,7.4-3.06,11.34-3.06,1.98,0,3.97.26,5.93.78,5.87,1.57,10.78,5.34,13.81,10.6,3.04,5.26,3.85,11.39,2.27,17.26ZM261.75,441.81c0,12.55-10.21,22.75-22.75,22.75s-22.75-10.21-22.75-22.75,10.21-22.75,22.75-22.75,22.75,10.21,22.75,22.75ZM287.66,302.75l-48.66,28.09-48.66-28.09v-56.18l48.66-28.09,48.66,28.09v56.18ZM364.06,346.86c3.04-5.26,7.94-9.03,13.81-10.6,5.87-1.57,12-.77,17.26,2.27,10.87,6.27,14.6,20.21,8.33,31.08-6.27,10.86-20.21,14.6-31.08,8.33-10.86-6.27-14.6-20.21-8.33-31.08Z"/>
+            </svg>
+        </div>
+        <span class="text-2xl font-bold tracking-tight text-[var(--slate-200)] font-logo">Task<span class="text-[var(--brand-blue)]">Core</span></span>
     </div>
 
     <div class="w-full max-w-2xl space-y-6" x-data="{
@@ -54,92 +66,92 @@
     }">
 
         <!-- Order Header Card -->
-        <div class="glass-panel p-6 rounded-2xl shadow-xl border border-slate-700/40 relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl"></div>
+        <div class="custom-glass-card p-6 rounded-2xl shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-[var(--brand-blue)]/5 blur-2xl"></div>
             
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-wider text-blue-400">Recibo / Orden de Servicio</span>
-                    <h2 class="text-2xl font-bold text-white mt-1">Ref: {{ pedido.referencia or 'N/A' }}</h2>
-                    <p class="text-xs text-slate-400 mt-1">Registrado el: {{ pedido.fecha_creacion.strftime('%d/%m/%Y a las %I:%M %p') }}</p>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-blue)]">Recibo / Orden de Servicio</span>
+                    <h2 class="text-2xl font-bold mt-1">Ref: {{ pedido.referencia or 'N/A' }}</h2>
+                    <p class="text-xs text-[var(--slate-400)] mt-1">Registrado el: {{ pedido.fecha_creacion.strftime('%d/%m/%Y a las %I:%M %p') }}</p>
                 </div>
                 
                 <div class="flex flex-col items-start md:items-end">
-                    <span class="text-xs text-slate-400">Cliente</span>
-                    <span class="text-base font-semibold text-slate-100 mt-0.5">{{ pedido.cliente.nombre_empresa }}</span>
+                    <span class="text-xs text-[var(--slate-400)]">Cliente</span>
+                    <span class="text-base font-semibold mt-0.5">{{ pedido.cliente.nombre_empresa }}</span>
                     {% if pedido.cliente.contacto_nombre %}
-                    <span class="text-xs text-slate-400">{{ pedido.cliente.contacto_nombre }}</span>
+                    <span class="text-xs text-[var(--slate-400)]">{{ pedido.cliente.contacto_nombre }}</span>
                     {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Payment & Billing Card -->
-        <div class="glass-panel p-6 rounded-2xl shadow-xl border border-slate-700/40 space-y-4">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="custom-glass-card p-6 rounded-2xl shadow-xl space-y-4">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--sem-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-20c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"></path>
                 </svg>
                 Información de Pago
             </h3>
             
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-[var(--slate-950)]/40 p-4 rounded-xl border border-[var(--slate-300)]">
                 <div>
-                    <span class="block text-xs text-slate-450 uppercase font-semibold">Total a Pagar</span>
-                    <span class="text-lg font-bold text-white">${{ "%.2f"|format(pedido.monto_total or 0.0) }} USD</span>
+                    <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Total a Pagar</span>
+                    <span class="text-lg font-bold">${{ "%.2f"|format(pedido.monto_total or 0.0) }} USD</span>
                 </div>
                 
                 <div>
-                    <span class="block text-xs text-slate-450 uppercase font-semibold">Estado de Pago</span>
+                    <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Estado de Pago</span>
                     {% if pedido.estado_pago == 'Cancelado' %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-[var(--sem-success)] border border-emerald-500/20 mt-1">
                         Cancelado (Pagado)
                     </span>
                     {% elif pedido.estado_pago == 'Abono' %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 mt-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/20 mt-1">
                         Abono Parcial
                     </span>
                     {% else %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mt-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-[var(--sem-warning)] border border-amber-500/20 mt-1">
                         Por Cancelar
                     </span>
                     {% endif %}
                 </div>
                 
                 <div class="col-span-2 sm:col-span-1">
-                    <span class="block text-xs text-slate-450 uppercase font-semibold">Detalles / Historial</span>
-                    <p class="text-xs text-slate-350 mt-1 leading-relaxed">{{ pedido.monto_abono or 'Pendiente de pago.' }}</p>
+                    <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Detalles / Historial</span>
+                    <p class="text-xs text-[var(--slate-400)] mt-1 leading-relaxed">{{ pedido.monto_abono or 'Pendiente de pago.' }}</p>
                 </div>
             </div>
 
             <!-- Coordenadas Bancarias (if not paid) -->
             {% if pedido.estado_pago != 'Cancelado' %}
             <div class="space-y-3 mt-2">
-                <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Cuentas y Métodos de Pago disponibles:</span>
+                <span class="block text-xs font-semibold text-[var(--slate-400)] uppercase tracking-wider">Cuentas y Métodos de Pago disponibles:</span>
                 
                 <div class="space-y-2">
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                    <div class="flex items-center justify-between bg-[var(--slate-900)]/60 p-3 rounded-lg border border-[var(--slate-300)]">
                         <div class="flex flex-col">
-                            <span class="text-xs font-semibold text-emerald-400">Zelle</span>
-                            <span class="text-xs text-slate-300 mt-0.5">{{ instrucciones.zelle }}</span>
+                            <span class="text-xs font-semibold text-[var(--sem-success)]">Zelle</span>
+                            <span class="text-xs mt-0.5">{{ instrucciones.zelle }}</span>
                         </div>
-                        <button type="button" @click="copyText('{{ instrucciones.zelle }}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2.5 py-1.5 rounded transition-colors font-medium">Copiar</button>
+                        <button type="button" @click="copyText('{{ instrucciones.zelle }}')" class="text-[10px] bg-[var(--slate-800)] hover:bg-[var(--slate-700)] text-[var(--brand-blue)] px-2.5 py-1.5 rounded transition-colors font-medium border border-[var(--slate-300)]">Copiar</button>
                     </div>
 
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                    <div class="flex items-center justify-between bg-[var(--slate-900)]/60 p-3 rounded-lg border border-[var(--slate-300)]">
                         <div class="flex flex-col">
-                            <span class="text-xs font-semibold text-emerald-400">Pago Móvil</span>
-                            <span class="text-xs text-slate-300 mt-0.5">{{ instrucciones.pago_movil }}</span>
+                            <span class="text-xs font-semibold text-[var(--sem-success)]">Pago Móvil</span>
+                            <span class="text-xs mt-0.5">{{ instrucciones.pago_movil }}</span>
                         </div>
-                        <button type="button" @click="copyText('{{ instrucciones.pago_movil }}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2.5 py-1.5 rounded transition-colors font-medium">Copiar</button>
+                        <button type="button" @click="copyText('{{ instrucciones.pago_movil }}')" class="text-[10px] bg-[var(--slate-800)] hover:bg-[var(--slate-700)] text-[var(--brand-blue)] px-2.5 py-1.5 rounded transition-colors font-medium border border-[var(--slate-300)]">Copiar</button>
                     </div>
 
-                    <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                    <div class="flex items-center justify-between bg-[var(--slate-900)]/60 p-3 rounded-lg border border-[var(--slate-300)]">
                         <div class="flex flex-col">
-                            <span class="text-xs font-semibold text-emerald-400">Transferencia Bancaria</span>
-                            <span class="text-xs text-slate-300 mt-0.5">{{ instrucciones.transferencia }}</span>
+                            <span class="text-xs font-semibold text-[var(--sem-success)]">Transferencia Bancaria</span>
+                            <span class="text-xs mt-0.5">{{ instrucciones.transferencia }}</span>
                         </div>
-                        <button type="button" @click="copyText('{{ instrucciones.transferencia }}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-blue-300 px-2.5 py-1.5 rounded transition-colors font-medium">Copiar</button>
+                        <button type="button" @click="copyText('{{ instrucciones.transferencia }}')" class="text-[10px] bg-[var(--slate-800)] hover:bg-[var(--slate-700)] text-[var(--brand-blue)] px-2.5 py-1.5 rounded transition-colors font-medium border border-[var(--slate-300)]">Copiar</button>
                     </div>
                 </div>
             </div>
@@ -148,65 +160,65 @@
 
         <!-- Live Work Order Status Tracking -->
         <div class="space-y-4">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--brand-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                 </svg>
                 Estatus de Dispositivos / Servicios
             </h3>
             
             {% for articulo in pedido.articulos %}
-            <div class="glass-panel p-6 rounded-2xl shadow-xl border border-slate-700/40 space-y-4">
+            <div class="custom-glass-card p-6 rounded-2xl shadow-xl space-y-4">
                 
                 <!-- Article Header -->
-                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div class="flex items-center justify-between border-b border-[var(--slate-300)] pb-3">
                     <div class="flex-1">
-                        <h4 class="text-base font-bold text-white">{{ articulo.nombre_proyecto }}</h4>
+                        <h4 class="text-base font-bold">{{ articulo.nombre_proyecto }}</h4>
                         {% if articulo.especificaciones %}
-                        <p class="text-xs text-slate-400 mt-1 whitespace-pre-line leading-relaxed">{{ articulo.especificaciones }}</p>
+                        <p class="text-xs text-[var(--slate-400)] mt-1 whitespace-pre-line leading-relaxed">{{ articulo.especificaciones }}</p>
                         {% endif %}
                     </div>
                 </div>
 
                 <!-- Step progress line visualizer -->
                 <div class="pt-2">
-                    <span class="text-xs font-semibold text-slate-450 uppercase block mb-3">Estatus del Trabajo</span>
+                    <span class="text-xs font-semibold text-[var(--slate-400)] uppercase block mb-3">Estatus del Trabajo</span>
                     
                     <!-- Progress Grid -->
                     <div class="grid grid-cols-4 relative text-center">
                         
                         <!-- Line background -->
-                        <div class="absolute top-4 left-[12.5%] right-[12.5%] h-0.5 bg-slate-800 z-0"></div>
+                        <div class="absolute top-4 left-[12.5%] right-[12.5%] h-0.5 bg-[var(--slate-300)] z-0"></div>
                         
                         <!-- Line fill (based on state) -->
-                        <div class="absolute top-4 left-[12.5%] h-0.5 bg-blue-500 z-0 transition-all duration-500"
+                        <div class="absolute top-4 left-[12.5%] h-0.5 bg-[var(--brand-blue)] z-0 transition-all duration-500"
                              style="width: {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir'] %}33.33%{% elif articulo.estado.value in ['Producción'] %}66.66%{% elif articulo.estado.value in ['Listo Entregar', 'Entregado'] %}75%{% else %}0%{% endif %};">
                         </div>
 
                         <!-- Step 1: Recepción -->
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
-                                bg-slate-900 border-blue-500 text-blue-400">
+                                bg-[var(--slate-800)] border-[var(--brand-blue)] text-[var(--brand-blue)]">
                                 1
                             </div>
-                            <span class="text-[10px] md:text-xs font-semibold text-blue-400 mt-2">Recepción</span>
+                            <span class="text-[10px] md:text-xs font-semibold text-[var(--brand-blue)] mt-2">Recepción</span>
                         </div>
 
                         <!-- Step 2: Diagnóstico/Diseño -->
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
                                 {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir', 'Producción', 'Listo Entregar', 'Entregado'] %}
-                                bg-slate-900 border-blue-500 text-blue-400
+                                bg-[var(--slate-800)] border-[var(--brand-blue)] text-[var(--brand-blue)]
                                 {% else %}
-                                bg-slate-950 border-slate-800 text-slate-600
+                                bg-[var(--slate-950)] border-[var(--slate-300)] text-[var(--slate-400)]
                                 {% endif %}">
                                 2
                             </div>
                             <span class="text-[10px] md:text-xs font-semibold mt-2
                                 {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir', 'Producción', 'Listo Entregar', 'Entregado'] %}
-                                text-blue-450
+                                text-[var(--brand-blue)]
                                 {% else %}
-                                text-slate-600
+                                text-[var(--slate-400)]
                                 {% endif %}">Servicio Técnico</span>
                         </div>
 
@@ -214,17 +226,17 @@
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
                                 {% if articulo.estado.value in ['Producción', 'Listo Entregar', 'Entregado'] %}
-                                bg-slate-900 border-blue-500 text-blue-400
+                                bg-[var(--slate-800)] border-[var(--brand-blue)] text-[var(--brand-blue)]
                                 {% else %}
-                                bg-slate-950 border-slate-800 text-slate-600
+                                bg-[var(--slate-950)] border-[var(--slate-300)] text-[var(--slate-400)]
                                 {% endif %}">
                                 3
                             </div>
                             <span class="text-[10px] md:text-xs font-semibold mt-2
                                 {% if articulo.estado.value in ['Producción', 'Listo Entregar', 'Entregado'] %}
-                                text-blue-450
+                                text-[var(--brand-blue)]
                                 {% else %}
-                                text-slate-600
+                                text-[var(--slate-400)]
                                 {% endif %}">Reparación</span>
                         </div>
 
@@ -232,17 +244,17 @@
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
                                 {% if articulo.estado.value in ['Listo Entregar', 'Entregado'] %}
-                                bg-emerald-500 border-emerald-500 text-slate-950
+                                bg-[var(--sem-success)] border-[var(--sem-success)] text-white dark:text-slate-950
                                 {% else %}
-                                bg-slate-950 border-slate-800 text-slate-600
+                                bg-[var(--slate-950)] border-[var(--slate-300)] text-[var(--slate-400)]
                                 {% endif %}">
                                 ✓
                             </div>
                             <span class="text-[10px] md:text-xs font-semibold mt-2
                                 {% if articulo.estado.value in ['Listo Entregar', 'Entregado'] %}
-                                text-emerald-400
+                                text-[var(--sem-success)]
                                 {% else %}
-                                text-slate-600
+                                text-[var(--slate-400)]
                                 {% endif %}">Listo</span>
                         </div>
 
@@ -254,11 +266,22 @@
         </div>
 
         <!-- Footer -->
-        <div class="text-center text-xs text-slate-500 pt-4">
+        <div class="text-center text-xs text-[var(--slate-400)] pt-4">
             <p>© 2026 Daniel Marin SysDev. Todos los derechos reservados.</p>
         </div>
 
     </div>
 
+    <script>
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+    </script>
 </body>
 </html>
