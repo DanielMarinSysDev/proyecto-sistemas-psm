@@ -43,6 +43,13 @@ app.register_blueprint(usuarios_bp)
 app.register_blueprint(finanzas_bp)
 app.register_blueprint(precios_bp)
 
+@app.context_processor
+def inject_global_vars():
+    import os
+    return {
+        "usa_supabase": bool(os.environ.get('SUPABASE_URL'))
+    }
+
 # Ruta base
 @app.route('/')
 def index():
