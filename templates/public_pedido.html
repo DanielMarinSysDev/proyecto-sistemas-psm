@@ -184,7 +184,31 @@
                 <!-- Article Header -->
                 <div class="flex items-center justify-between border-b border-[var(--slate-300)] pb-3">
                     <div class="flex-1">
-                        <h4 class="text-base font-bold">{{ articulo.nombre_proyecto }}</h4>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-base font-bold">{{ articulo.nombre_proyecto }}</h4>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border
+                                {% if articulo.estado.value == 'Pendiente (Ingreso)' %}
+                                bg-slate-900/60 text-slate-400 border-slate-700
+                                {% elif articulo.estado.value == 'En Diagnóstico' %}
+                                bg-blue-900/40 text-blue-400 border-blue-800/40
+                                {% elif articulo.estado.value == 'En Revisión (Presupuesto)' %}
+                                bg-amber-900/40 text-amber-400 border-amber-800/40
+                                {% elif articulo.estado.value == 'Reparación Aprobada' %}
+                                bg-violet-900/40 text-violet-400 border-violet-800/40
+                                {% elif articulo.estado.value == 'En Reparación / Servicio' %}
+                                bg-orange-900/40 text-orange-400 border-orange-800/40
+                                {% elif articulo.estado.value == 'Listo para Entregar' %}
+                                bg-emerald-900/40 text-emerald-400 border-emerald-800/40
+                                {% elif articulo.estado.value in ['Completado / Entregado', 'Entregado'] %}
+                                bg-teal-900/40 text-teal-400 border-teal-800/40
+                                {% elif articulo.estado.value == 'Cancelado' %}
+                                bg-red-900/40 text-red-400 border-red-800/40
+                                {% else %}
+                                bg-slate-900/60 text-slate-400 border-slate-700
+                                {% endif %}">
+                                {{ articulo.estado.value }}
+                            </span>
+                        </div>
                         {% if articulo.especificaciones %}
                         <p class="text-xs text-[var(--slate-400)] mt-1 whitespace-pre-line leading-relaxed">{{ articulo.especificaciones }}</p>
                         {% endif %}
@@ -203,7 +227,7 @@
                         
                         <!-- Line fill (based on state) -->
                         <div class="absolute top-4 left-[12.5%] h-0.5 bg-[var(--brand-blue)] z-0 transition-all duration-500"
-                             style="width: {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir'] %}33.33%{% elif articulo.estado.value in ['Producción'] %}66.66%{% elif articulo.estado.value in ['Listo Entregar', 'Entregado'] %}75%{% else %}0%{% endif %};">
+                             style="width: {% if articulo.estado.value in ['En Diagnóstico', 'En Revisión (Presupuesto)'] %}25%{% elif articulo.estado.value in ['Reparación Aprobada', 'En Reparación / Servicio'] %}50%{% elif articulo.estado.value in ['Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}75%{% else %}0%{% endif %};">
                         </div>
 
                         <!-- Step 1: Recepción -->
@@ -218,7 +242,7 @@
                         <!-- Step 2: Diagnóstico/Diseño -->
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
-                                {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir', 'Producción', 'Listo Entregar', 'Entregado'] %}
+                                {% if articulo.estado.value in ['En Diagnóstico', 'En Revisión (Presupuesto)', 'Reparación Aprobada', 'En Reparación / Servicio', 'Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}
                                 bg-[var(--slate-800)] border-[var(--brand-blue)] text-[var(--brand-blue)]
                                 {% else %}
                                 bg-[var(--slate-950)] border-[var(--slate-300)] text-[var(--slate-400)]
@@ -226,7 +250,7 @@
                                 2
                             </div>
                             <span class="text-[10px] md:text-xs font-semibold mt-2
-                                {% if articulo.estado.value in ['Diseño', 'Revisión', 'Aprobado Imprimir', 'Producción', 'Listo Entregar', 'Entregado'] %}
+                                {% if articulo.estado.value in ['En Diagnóstico', 'En Revisión (Presupuesto)', 'Reparación Aprobada', 'En Reparación / Servicio', 'Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}
                                 text-[var(--brand-blue)]
                                 {% else %}
                                 text-[var(--slate-400)]
@@ -236,7 +260,7 @@
                         <!-- Step 3: En Proceso -->
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
-                                {% if articulo.estado.value in ['Producción', 'Listo Entregar', 'Entregado'] %}
+                                {% if articulo.estado.value in ['Reparación Aprobada', 'En Reparación / Servicio', 'Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}
                                 bg-[var(--slate-800)] border-[var(--brand-blue)] text-[var(--brand-blue)]
                                 {% else %}
                                 bg-[var(--slate-950)] border-[var(--slate-300)] text-[var(--slate-400)]
@@ -244,7 +268,7 @@
                                 3
                             </div>
                             <span class="text-[10px] md:text-xs font-semibold mt-2
-                                {% if articulo.estado.value in ['Producción', 'Listo Entregar', 'Entregado'] %}
+                                {% if articulo.estado.value in ['Reparación Aprobada', 'En Reparación / Servicio', 'Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}
                                 text-[var(--brand-blue)]
                                 {% else %}
                                 text-[var(--slate-400)]
@@ -254,7 +278,7 @@
                         <!-- Step 4: Listo / Entregado -->
                         <div class="flex flex-col items-center z-10">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-colors duration-300
-                                {% if articulo.estado.value in ['Listo Entregar', 'Entregado'] %}
+                                {% if articulo.estado.value in ['Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}
                                 bg-[var(--sem-success)] border-[var(--sem-success)] text-white dark:text-slate-950
                                 {% else %}
                                 bg-[var(--slate-950)] border-[var(--slate-300)] text-[var(--slate-400)]
@@ -262,7 +286,7 @@
                                 ✓
                             </div>
                             <span class="text-[10px] md:text-xs font-semibold mt-2
-                                {% if articulo.estado.value in ['Listo Entregar', 'Entregado'] %}
+                                {% if articulo.estado.value in ['Listo para Entregar', 'Completado / Entregado', 'Entregado'] %}
                                 text-[var(--sem-success)]
                                 {% else %}
                                 text-[var(--slate-400)]

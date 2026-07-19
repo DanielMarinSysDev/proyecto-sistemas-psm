@@ -11,7 +11,7 @@
     }
     
     /* Reset body and container styles to allow multi-page printing */
-    body, html, main, .flex-1, .h-screen, .overflow-hidden, .overflow-y-auto {
+    html, body, body > div.flex-1, main, main > div.flex-1 {
         background: white !important;
         color: black !important;
         overflow: visible !important;
@@ -272,8 +272,12 @@
                         <!-- Orden Relacionada -->
                         <td class="px-6 py-4 text-center whitespace-nowrap">
                             {% if log.orden_id %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-blue-500/10 border border-blue-500/30 text-blue-400 shadow-sm shadow-blue-500/5 hover:bg-blue-500/20 transition-all cursor-pointer">
-                                #{{ log.orden_id }}
+                            <span class="inline-flex flex-col items-center px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-blue-500/10 border border-blue-500/35 text-blue-300 shadow-sm shadow-blue-500/5 hover:bg-blue-500/25 transition-all cursor-pointer"
+                                  title="Pedido Ref: {{ log.orden.pedido.referencia if log.orden and log.orden.pedido else 'Sin Ref' }}">
+                                <span>ART-{{ log.orden_id }}</span>
+                                {% if log.orden and log.orden.pedido and log.orden.pedido.referencia %}
+                                <span class="text-[9px] text-slate-500 font-sans mt-0.5 tracking-tight">{{ log.orden.pedido.referencia }}</span>
+                                {% endif %}
                             </span>
                             {% else %}
                             <span class="text-slate-600 text-xs">-</span>

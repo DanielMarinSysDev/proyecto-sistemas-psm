@@ -97,11 +97,12 @@ class ProduccionEventHandler(FileSystemEventHandler):
             orden.estado = nuevo_estado
             
             # Registrar auditoría (Usuario 1 = Admin/Sistema)
+            pedido_ref = orden.pedido.referencia if orden.pedido else "Sin Ref"
             log = LogAuditoria(
                 usuario_id=1, 
                 orden_id=articulo_id,
                 accion="Automatización Hot Folder",
-                detalles=f"Orden #{articulo_id} pasó de '{estado_anterior}' a '{nuevo_estado.value}' por movimiento a: {os.path.basename(os.path.dirname(ruta))}"
+                detalles=f"Artículo #{articulo_id} (Ref: {pedido_ref}) pasó de '{estado_anterior}' a '{nuevo_estado.value}' por movimiento a: {os.path.basename(os.path.dirname(ruta))}"
             )
             session.add(log)
             session.commit()

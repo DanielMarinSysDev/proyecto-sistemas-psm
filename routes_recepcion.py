@@ -323,7 +323,7 @@ def crear_orden_trabajo():
         log = LogAuditoria(
             usuario_id=creador_id,
             accion="Pedido Creado",
-            detalles=f"Pedido #{nuevo_pedido.id} creado con {len(articulos)} artículos para {cliente.nombre_empresa}"
+            detalles=f"Pedido #{nuevo_pedido.id} (Ref: {nuevo_pedido.referencia}) creado con {len(articulos)} artículos para {cliente.nombre_empresa}"
         )
         session.add(log)
         
@@ -445,11 +445,12 @@ def actualizar_estado_orden(orden_id):
         orden.estado = nuevo_estado
         
         # Registrar en logs de auditoría el cambio
+        pedido_ref = orden.pedido.referencia if orden.pedido else "Sin Ref"
         log = LogAuditoria(
             usuario_id=usuario_id,
             orden_id=orden.id,
             accion="Cambio de Estado",
-            detalles=f"Orden #{orden_id} pasó de '{estado_anterior}' a '{nuevo_estado.value}'"
+            detalles=f"Artículo #{orden_id} (Ref: {pedido_ref}) pasó de '{estado_anterior}' a '{nuevo_estado.value}'"
         )
         session.add(log)
         
