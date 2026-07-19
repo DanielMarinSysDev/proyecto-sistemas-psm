@@ -38,6 +38,17 @@ class EstadoOrdenEnum(enum.Enum):
 # -------------------------------------------------------------------
 # Modelos de Base de Datos
 # -------------------------------------------------------------------
+class UsuarioRol(Base):
+    """
+    Tabla intermedia para soportar multi-roles (Relación Muchos a Muchos)
+    """
+    __tablename__ = 'usuario_roles'
+    
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), primary_key=True)
+    rol = Column(Enum(RolEnum), primary_key=True)
+    
+    usuario = relationship("Usuario", back_populates="roles")
+
 class Usuario(Base):
     """
     Tabla de usuarios con sus respectivos roles y permisos en el sistema.
@@ -48,9 +59,32 @@ class Usuario(Base):
     nombre = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    rol = Column(Enum(RolEnum), nullable=False)
+    rol_legacy = Column('rol', Enum(RolEnum), nullable=True)
     telefono = Column(String(50), nullable=True)
     
+    roles = relationship("UsuarioRol", back_populates="usuario", cascade="all, delete-orphan")
+    
+    @property
+    def rol(self):
+        # Devuelve el rol de mayor jerarquía de la lista de roles del usuario
+        if not self.roles:
+            return RolEnum.INSTALADOR  # fallback
+        roles_enums = [ur.rol for ur in self.roles]
+        # Prioridad de mayor a menor jerarquía
+        for r in [RolEnum.ADMIN, RolEnum.GERENCIA, RolEnum.VENTAS, RolEnum.DISENADOR, RolEnum.PRODUCCION, RolEnum.INSTALADOR]:
+            if r in roles_enums:
+                return r
+        return roles_enums[0]
+        
+    @rol.setter
+    def rol(self, nuevo_rol):
+        if nuevo_rol:
+            self.roles = [UsuarioRol(rol=nuevo_rol)]
+            
+    @property
+    def roles_list(self):
+        return [ur.rol for ur in self.roles]
+        
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
         
@@ -119,6 +153,10 @@ class OrdenTrabajo(Base):
     
     # Detalles técnicos
     especificaciones = Column(Text, nullable=True)
+    diagnostico_defectos = Column(Text, nullable=True)
+    diagnostico_detalles = Column(Text, nullable=True)
+    diagnostico_insumos = Column(Text, nullable=True)
+    diagnostico_observaciones = Column(Text, nullable=True)
     
     # Trazabilidad y Archivos Físicos
     ruta_archivos_transaccionales = Column(String(500), nullable=True)
@@ -249,6 +287,44 @@ def init_db():
         print("Columna es_adicional agregada o verificada exitosamente.")
     except Exception as ex:
         print(f"Aviso al agregar columna es_adicional (probablemente ya existe): {ex}")
+        
+    # Parchear columnas de diagnóstico en ordenes_trabajo si no existen
+    for col_name in ["diagnostico_defectos", "diagnostico_detalles", "diagnostico_insumos", "diagnostico_observaciones"]:
+        try:
+            with engine.begin() as conn:
+                if "postgresql" in str(engine.url):
+                    conn.execute(text(f"ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS {col_name} TEXT"))
+                else:
+                    conn.execute(text(f"ALTER TABLE ordenes_trabajo ADD COLUMN {col_name} TEXT"))
+            print(f"Columna {col_name} agregada o verificada exitosamente.")
+        except Exception as ex:
+            print(f"Aviso al agregar columna {col_name} (probablemente ya existe): {ex}")
+            
+    # Auto-migrar roles existentes a la tabla intermedia usuario_roles
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
+    try:
+        usuarios = session.query(Usuario).all()
+        for u in usuarios:
+            if not u.roles:
+                val_rol = getattr(u, 'rol_legacy', None)
+                if val_rol:
+                    if isinstance(val_rol, RolEnum):
+                        nuevo_rol = UsuarioRol(usuario_id=u.id, rol=val_rol)
+                        session.add(nuevo_rol)
+                    elif isinstance(val_rol, str):
+                        for r in RolEnum:
+                            if r.value == val_rol or r.name == val_rol:
+                                nuevo_rol = UsuarioRol(usuario_id=u.id, rol=r)
+                                session.add(nuevo_rol)
+                                break
+        session.commit()
+        print("Migración de roles de usuario legacy completada con éxito.")
+    except Exception as migration_e:
+        session.rollback()
+        print(f"Aviso durante la migración de roles: {migration_e}")
+    finally:
+        session.close()
         
     print("¡Base de datos y tablas creadas exitosamente!")
 

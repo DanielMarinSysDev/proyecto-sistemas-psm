@@ -381,7 +381,7 @@
                         body: JSON.stringify({
                             pedidos: this.pedidosSeleccionados,
                             detalles: this.detallesPago,
-                            metodo_pago: this.metodoPagoLiquidar
+                            metodo_pago: this.detallesPago ? `${this.metodoPagoLiquidar} (Ref: ${this.detallesPago})` : this.metodoPagoLiquidar
                         })
                     });
                     
@@ -438,7 +438,7 @@
                             pedido_id: this.pedidoAbono.id,
                             monto: this.abonoForm.monto,
                             detalles: this.abonoForm.detalles,
-                            metodo_pago: this.abonoForm.metodo_pago
+                            metodo_pago: this.abonoForm.detalles ? `${this.abonoForm.metodo_pago} (Ref: ${this.abonoForm.detalles})` : this.abonoForm.metodo_pago
                         })
                     });
                     

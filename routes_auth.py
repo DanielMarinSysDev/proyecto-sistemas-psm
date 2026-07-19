@@ -30,15 +30,17 @@ def role_required(*allowed_roles):
                 return jsonify({"error": "No has iniciado sesión. Acceso denegado."}), 401
             
             # 2. Verificar si el rol del usuario actual está en la lista de permitidos
-            user_role_value = session.get('usuario_rol')
+            user_roles = session.get('usuario_roles', [])
+            if not user_roles and session.get('usuario_rol'):
+                user_roles = [session.get('usuario_rol')]
             
             # El Administrador siempre tiene acceso total
-            if user_role_value == RolEnum.ADMIN.value:
+            if RolEnum.ADMIN.value in user_roles:
                 return f(*args, **kwargs)
                 
-            # Verificar si el rol del usuario está permitido en esta ruta específica
+            # Verificar si alguno de los roles del usuario está permitido en esta ruta específica
             allowed_values = [rol.value for rol in allowed_roles]
-            if user_role_value not in allowed_values:
+            if not any(r in allowed_values for r in user_roles):
                 return jsonify({"error": f"Acceso denegado. Se requiere uno de estos roles: {allowed_values}"}), 403
                 
             return f(*args, **kwargs)
@@ -73,13 +75,15 @@ def login():
         session['usuario_id'] = usuario.id
         session['usuario_nombre'] = usuario.nombre
         session['usuario_rol'] = usuario.rol.value
+        session['usuario_roles'] = [ur.rol.value for ur in usuario.roles]
         
         return jsonify({
             "mensaje": "Inicio de sesión exitoso",
             "usuario": {
                 "id": usuario.id,
                 "nombre": usuario.nombre,
-                "rol": usuario.rol.value
+                "rol": usuario.rol.value,
+                "roles": [ur.rol.value for ur in usuario.roles]
             }
         }), 200
         

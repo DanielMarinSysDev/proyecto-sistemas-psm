@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify
-from database_models import engine, Usuario, RolEnum
+from database_models import engine, Usuario, RolEnum, LogAuditoria
 from sqlalchemy.orm import sessionmaker
 from routes_auth import login_required, role_required
 
@@ -40,17 +40,23 @@ def crear_usuario():
     email = data.get('email')
     password = data.get('password')
     rol_str = data.get('rol')
+    roles_list = data.get('roles', [])
     telefono = data.get('telefono', '')
     
-    if not nombre or not email or not password or not rol_str:
+    if not roles_list and rol_str:
+        roles_list = [rol_str]
+        
+    if not nombre or not email or not password or not roles_list:
         return jsonify({"error": "Faltan campos obligatorios"}), 400
         
     # Control de jerarquía: Gerencia solo puede crear usuarios con roles inferiores
     from flask import session as flask_session
     rol_actual = flask_session.get('usuario_rol')
-    if rol_actual == RolEnum.GERENCIA.value:
-        if rol_str in [RolEnum.ADMIN.value, RolEnum.GERENCIA.value]:
-            return jsonify({"error": "No tienes permisos para crear usuarios con este rol"}), 403
+    user_roles = flask_session.get('usuario_roles', [])
+    if RolEnum.GERENCIA.value in user_roles or rol_actual == RolEnum.GERENCIA.value:
+        for r_str in roles_list:
+            if r_str in [RolEnum.ADMIN.value, RolEnum.GERENCIA.value]:
+                return jsonify({"error": "No tienes permisos para crear usuarios con este rol"}), 403
 
     session = Session()
     try:
@@ -58,25 +64,43 @@ def crear_usuario():
         if session.query(Usuario).filter_by(email=email).first():
             return jsonify({"error": "El correo electrónico ya está registrado"}), 400
             
-        # Convertir string de rol a Enum
-        rol_enum = None
-        for r in RolEnum:
-            if r.value == rol_str:
-                rol_enum = r
-                break
-                
-        if not rol_enum:
-            return jsonify({"error": "Rol no válido"}), 400
+        # Convertir strings de rol a Enums
+        roles_enums = []
+        for r_str in roles_list:
+            rol_enum = None
+            for r in RolEnum:
+                if r.value == r_str:
+                    rol_enum = r
+                    break
+            if not rol_enum:
+                return jsonify({"error": f"Rol no válido: {r_str}"}), 400
+            roles_enums.append(rol_enum)
             
         nuevo_usuario = Usuario(
             nombre=nombre,
             email=email,
-            rol=rol_enum,
             telefono=telefono
         )
         nuevo_usuario.set_password(password)
         
         session.add(nuevo_usuario)
+        session.flush()
+        
+        from database_models import UsuarioRol
+        for re in roles_enums:
+            session.add(UsuarioRol(usuario_id=nuevo_usuario.id, rol=re))
+            
+        session.flush()
+
+        # Registrar log de auditoría
+        log_usuario_id = flask_session.get('usuario_id') or 1
+        roles_desc = ", ".join([re.value for re in roles_enums])
+        log = LogAuditoria(
+            usuario_id=log_usuario_id,
+            accion="USUARIO CREACIÓN",
+            detalles=f"Se creó el usuario {nuevo_usuario.nombre} ({nuevo_usuario.email}) con roles [{roles_desc}]"
+        )
+        session.add(log)
         session.commit()
         
         return jsonify({"mensaje": "Usuario creado exitosamente"}), 201
@@ -102,9 +126,13 @@ def editar_usuario(usuario_id):
     email = data.get('email')
     password = data.get('password')
     rol_str = data.get('rol')
+    roles_list = data.get('roles', [])
     telefono = data.get('telefono', '')
     
-    if not nombre or not email or not rol_str:
+    if not roles_list and rol_str:
+        roles_list = [rol_str]
+        
+    if not nombre or not email or not roles_list:
         return jsonify({"error": "Faltan campos obligatorios"}), 400
         
     session = Session()
@@ -116,36 +144,57 @@ def editar_usuario(usuario_id):
         # Control de jerarquía: Gerencia solo puede editar usuarios con roles inferiores
         from flask import session as flask_session
         rol_actual = flask_session.get('usuario_rol')
-        if rol_actual == RolEnum.GERENCIA.value:
-            if usuario.rol in [RolEnum.ADMIN, RolEnum.GERENCIA]:
+        user_roles = flask_session.get('usuario_roles', [])
+        if RolEnum.GERENCIA.value in user_roles or rol_actual == RolEnum.GERENCIA.value:
+            if any(ur.rol in [RolEnum.ADMIN, RolEnum.GERENCIA] for ur in usuario.roles):
                 return jsonify({"error": "No tienes permisos para editar a este usuario"}), 403
-            if rol_str in [RolEnum.ADMIN.value, RolEnum.GERENCIA.value]:
-                return jsonify({"error": "No tienes permisos para asignar este rol"}), 403
+            for r_str in roles_list:
+                if r_str in [RolEnum.ADMIN.value, RolEnum.GERENCIA.value]:
+                    return jsonify({"error": "No tienes permisos para asignar este rol"}), 403
             
         # Verificar duplicidad de email si cambió
         if usuario.email != email:
             if session.query(Usuario).filter_by(email=email).first():
                 return jsonify({"error": "El correo electrónico ya está registrado por otro usuario"}), 400
                 
-        # Convertir string de rol a Enum
-        rol_enum = None
-        for r in RolEnum:
-            if r.value == rol_str:
-                rol_enum = r
-                break
-                
-        if not rol_enum:
-            return jsonify({"error": "Rol no válido"}), 400
+        # Convertir strings de rol a Enums
+        roles_enums = []
+        for r_str in roles_list:
+            rol_enum = None
+            for r in RolEnum:
+                if r.value == r_str:
+                    rol_enum = r
+                    break
+            if not rol_enum:
+                return jsonify({"error": f"Rol no válido: {r_str}"}), 400
+            roles_enums.append(rol_enum)
             
         usuario.nombre = nombre
         usuario.email = email
-        usuario.rol = rol_enum
         usuario.telefono = telefono
+        
+        # Actualizar roles en la relación muchos a muchos
+        from database_models import UsuarioRol
+        session.query(UsuarioRol).filter_by(usuario_id=usuario_id).delete()
+        for re in roles_enums:
+            session.add(UsuarioRol(usuario_id=usuario_id, rol=re))
         
         if password and len(password.strip()) >= 6:
             usuario.set_password(password.strip())
             
         session.commit()
+
+        # Registrar log de auditoría
+        log_usuario_id = flask_session.get('usuario_id') or 1
+        roles_desc = ", ".join([re.value for re in roles_enums])
+        log = LogAuditoria(
+            usuario_id=log_usuario_id,
+            accion="USUARIO MODIFICACIÓN",
+            detalles=f"Se modificó el usuario {usuario.nombre} ({usuario.email}) con roles [{roles_desc}]"
+        )
+        session.add(log)
+        session.commit()
+
         return jsonify({"mensaje": "Usuario actualizado exitosamente"}), 200
         
     except Exception as e:
@@ -170,8 +219,9 @@ def eliminar_usuario(usuario_id):
         # Control de jerarquía: Gerencia solo puede eliminar usuarios con roles inferiores
         from flask import session as flask_session
         rol_actual = flask_session.get('usuario_rol')
-        if rol_actual == RolEnum.GERENCIA.value:
-            if usuario.rol in [RolEnum.ADMIN, RolEnum.GERENCIA]:
+        user_roles = flask_session.get('usuario_roles', [])
+        if RolEnum.GERENCIA.value in user_roles or rol_actual == RolEnum.GERENCIA.value:
+            if any(ur.rol in [RolEnum.ADMIN, RolEnum.GERENCIA] for ur in usuario.roles):
                 return jsonify({"error": "No tienes permisos para eliminar a este usuario"}), 403
             
         # Opcional: Proteger para no auto-eliminarse
@@ -179,6 +229,15 @@ def eliminar_usuario(usuario_id):
         if usuario.id == flask_session.get('usuario_id'):
             return jsonify({"error": "No puedes eliminar tu propia cuenta activa"}), 400
             
+        # Registrar log de auditoría
+        log_usuario_id = flask_session.get('usuario_id') or 1
+        roles_desc = ", ".join([ur.rol.value for ur in usuario.roles])
+        log = LogAuditoria(
+            usuario_id=log_usuario_id,
+            accion="USUARIO ELIMINACIÓN",
+            detalles=f"Se eliminó el usuario {usuario.nombre} ({usuario.email}) con roles [{roles_desc}]"
+        )
+        session.add(log)
         session.delete(usuario)
         session.commit()
         return jsonify({"mensaje": "Usuario eliminado exitosamente"}), 200

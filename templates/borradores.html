@@ -397,7 +397,10 @@ function borradoresAdmin() {
                 ...this.confirmForm,
                 monto_abono: this.confirmForm.estado_pago === 'Abono' 
                     ? (this.confirmForm.notas_pago ? `${this.confirmForm.monto_abono} (${this.confirmForm.notas_pago})` : this.confirmForm.monto_abono) 
-                    : (this.confirmForm.estado_pago === 'Cancelado' ? `Cancelado (${this.confirmForm.notas_pago || 'Pago completo'})` : '0')
+                    : (this.confirmForm.estado_pago === 'Cancelado' ? `Cancelado (${this.confirmForm.notas_pago || 'Pago completo'})` : '0'),
+                metodo_pago: (this.confirmForm.estado_pago !== 'Por Cancelar' && this.confirmForm.notas_pago)
+                    ? `${this.confirmForm.metodo_pago} (Ref: ${this.confirmForm.notas_pago})`
+                    : this.confirmForm.metodo_pago
             };
             try {
                 const res = await fetch(`/api/borradores/${this.selectedBorrador.id}/confirmar`, {

@@ -1016,5 +1016,133 @@ class TestSistemaTaskCore(unittest.TestCase):
 
         self.logout()
 
+    def test_26_reportes_precision_financiera(self):
+        """
+        Verifica que los reportes financieros manejen correctamente:
+        1. Pedidos con múltiples artículos (evitar duplicación en ingresos y ranking de clientes).
+        2. Órdenes en estado 'En Revisión (Presupuesto)' (excluyéndolas de métricas y de ingresos).
+        """
+        # Iniciar sesión como Admin
+        self.login('admin@taskcore.com', 'admin123')
+        
+        # Crear un Pedido con 2 artículos con valor total de $100.0
+        resp = self.client.post(
+            '/api/ordenes',
+            json={
+                'cliente_id': 1,
+                'creador_id': 1,
+                'referencia': 'REF-METRICS-TEST-1',
+                'estado_pago': 'Cancelado',
+                'monto_total': 100.0,
+                'moneda': 'USD',
+                'tasa_bcv': 36.0,
+                'articulos': [
+                    {
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Diagnóstico Técnico General',
+                        'cantidad': 1,
+                        'specs': 'Artículo 1'
+                    },
+                    {
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Limpieza Avanzada',
+                        'cantidad': 1,
+                        'specs': 'Artículo 2'
+                    }
+                ]
+            }
+        )
+        self.assertEqual(resp.status_code, 201)
+        
+        # Consultar reportes y verificar que el total_usd en top_clientes para 'Cliente Prueba' sea exactamente $285.0 (15 de test_05 + 70 de test_07 + 0 de test_21 + 100 de test_23 + 100 de esta prueba)
+        resp_api = self.client.get('/api/finanzas/reportes')
+        self.assertEqual(resp_api.status_code, 200)
+        data = resp_api.get_json()
+        
+        # Encontrar el 'Cliente Prueba'
+        cliente_stats = next((c for c in data['top_clientes'] if c['cliente'] == 'Cliente Prueba'), None)
+        self.assertIsNotNone(cliente_stats)
+        self.assertEqual(cliente_stats['total_usd'], 285.0)
+        
+        # Ahora creamos un pedido que estará "En Revisión (Presupuesto)"
+        resp_rev = self.client.post(
+            '/api/ordenes',
+            json={
+                'cliente_id': 1,
+                'creador_id': 1,
+                'referencia': 'REF-METRICS-TEST-REVISION',
+                'estado_pago': 'Por Cancelar',
+                'monto_total': 500.0,
+                'moneda': 'USD',
+                'tasa_bcv': 36.0,
+                'articulos': [
+                    {
+                        'tipo_trabajo': 'Computadora / Laptop',
+                        'material': 'Diagnóstico Técnico General',
+                        'cantidad': 1,
+                        'specs': 'Artículo En Revisión'
+                    }
+                ]
+            }
+        )
+        self.assertEqual(resp_rev.status_code, 201)
+        pedido_rev_id = resp_rev.get_json()['pedido_id']
+        
+        # Obtener el ID de la orden de trabajo para cambiar su estado
+        db_session = Session()
+        try:
+            from database_models import OrdenTrabajo, EstadoOrdenEnum
+            orden = db_session.query(OrdenTrabajo).filter_by(pedido_id=pedido_rev_id).first()
+            self.assertIsNotNone(orden)
+            orden_id = orden.id
+        finally:
+            db_session.close()
+            
+        # Cambiar el estado de la orden a 'En Revisión (Presupuesto)'
+        resp_status = self.client.put(
+            f'/api/ordenes/{orden_id}/estado',
+            json={
+                'nuevo_estado': 'En Revisión (Presupuesto)',
+                'usuario_id': 1
+            }
+        )
+        self.assertEqual(resp_status.status_code, 200)
+        
+        # Volver a consultar métricas
+        resp_api_after = self.client.get('/api/finanzas/reportes')
+        self.assertEqual(resp_api_after.status_code, 200)
+        data_after = resp_api_after.get_json()
+        
+        # El pedido de $500.0 no debería ser sumado al total_generado_mes ni al cliente_stats['total_usd']
+        cliente_stats_after = next((c for c in data_after['top_clientes'] if c['cliente'] == 'Cliente Prueba'), None)
+        self.assertEqual(cliente_stats_after['total_usd'], 285.0) # Se mantiene en 285.0, no sube a 785.0
+        
+        self.logout()
+
+    def test_25_technical_diagnostics_and_multi_role(self):
+        """Prueba de registro de diagnóstico técnico e integración de campos en detalle."""
+        self.login('admin@taskcore.com', 'admin123')
+        
+        # Guardar Diagnóstico
+        payload = {
+            'defectos': 'Fallas de prueba',
+            'detalles': 'Detalles de prueba',
+            'insumos': 'Insumos de prueba',
+            'observaciones': 'Observaciones de prueba'
+        }
+        resp = self.client.put('/api/ordenes/1/diagnostico', json=payload)
+        self.assertEqual(resp.status_code, 200)
+        
+        # Consultar detalle
+        resp_det = self.client.get('/api/finanzas/orden/1/detalle')
+        self.assertEqual(resp_det.status_code, 200)
+        data = resp_det.get_json()
+        self.assertEqual(data['diagnostico_defectos'], 'Fallas de prueba')
+        self.assertEqual(data['diagnostico_detalles'], 'Detalles de prueba')
+        self.assertEqual(data['diagnostico_insumos'], 'Insumos de prueba')
+        self.assertEqual(data['diagnostico_observaciones'], 'Observaciones de prueba')
+        
+        self.logout()
+
 if __name__ == '__main__':
     unittest.main()

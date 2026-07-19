@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, render_template
-from database_models import engine, Cliente, RolEnum
+from database_models import engine, Cliente, RolEnum, LogAuditoria
 from sqlalchemy.orm import sessionmaker
 from file_manager import create_master_data_folder
 import logging
@@ -62,6 +62,16 @@ def crear_cliente():
             session.rollback()
             return jsonify({"error": "No se pudieron crear las carpetas físicas en el servidor"}), 500
             
+        # Registrar log de auditoría
+        from flask import session as flask_session
+        log_usuario_id = flask_session.get('usuario_id') or 1
+        log = LogAuditoria(
+            usuario_id=log_usuario_id,
+            accion="CLIENTE CREACIÓN",
+            detalles=f"Se creó el cliente '{nuevo_cliente.nombre_empresa}' (Contacto: {nuevo_cliente.contacto_nombre})"
+        )
+        session.add(log)
+        
         # 3. Guardar todo si fue exitoso
         session.commit()
         
@@ -134,6 +144,15 @@ def eliminar_cliente(cliente_id):
         if not cliente:
             return jsonify({"error": "Cliente no encontrado"}), 404
             
+        # Registrar log de auditoría
+        from flask import session as flask_session
+        log_usuario_id = flask_session.get('usuario_id') or 1
+        log = LogAuditoria(
+            usuario_id=log_usuario_id,
+            accion="CLIENTE ELIMINACIÓN",
+            detalles=f"Se eliminó el cliente '{cliente.nombre_empresa}' (ID: {cliente_id})"
+        )
+        session.add(log)
         session.delete(cliente)
         session.commit()
         
@@ -175,6 +194,15 @@ def editar_cliente(cliente_id):
         cliente.email = email
         cliente.telefono = normalizar_numero_db(telefono)
         
+        # Registrar log de auditoría
+        from flask import session as flask_session
+        log_usuario_id = flask_session.get('usuario_id') or 1
+        log = LogAuditoria(
+            usuario_id=log_usuario_id,
+            accion="CLIENTE MODIFICACIÓN",
+            detalles=f"Se modificó el cliente '{cliente.nombre_empresa}' (Contacto: {cliente.contacto_nombre})"
+        )
+        session.add(log)
         session.commit()
         return jsonify({"mensaje": "Cliente actualizado exitosamente"}), 200
     except Exception as e:

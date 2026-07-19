@@ -439,6 +439,10 @@ def api_reportes():
                 OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
             ).all()
         
+        # Filtrar pedidos para excluir los que solo tienen artículos en revisión o borrador
+        pedidos_mes = [p for p in pedidos_mes if any(o.estado not in [EstadoOrdenEnum.BORRADOR, EstadoOrdenEnum.EN_REVISION] for o in p.articulos)]
+        pedidos_prev = [p for p in pedidos_prev if any(o.estado not in [EstadoOrdenEnum.BORRADOR, EstadoOrdenEnum.EN_REVISION] for o in p.articulos)]
+        
         total_generado_mes = sum([obtener_total_usd(p) for p in pedidos_mes])
         total_generado_prev = sum([obtener_total_usd(p) for p in pedidos_prev])
         
@@ -474,7 +478,6 @@ def api_reportes():
                 por_material[material]["ingresos_usd"] += monto_usd
                 
             ref_str = o.pedido.referencia if o.pedido else f"JOB-{o.id}"
-            monto_pedido_usd = obtener_total_usd(o.pedido) if o.pedido else 0.0
             detalles_ordenes.append({
                 "id": o.id,
                 "nombre_proyecto": o.nombre_proyecto,
@@ -482,7 +485,7 @@ def api_reportes():
                 "fecha": o.fecha_creacion.strftime('%d/%m/%Y'),
                 "estado": o.estado.value,
                 "referencia": ref_str,
-                "monto_pedido_usd": round(monto_pedido_usd, 2)
+                "monto_pedido_usd": round(monto_usd, 2)
             })
             
         # 1. Rendimiento de Diseñadores
@@ -502,22 +505,22 @@ def api_reportes():
                     disenadores_stats[d_nombre] = {"completados": 0, "en_progreso": 0, "total": 0}
                 
                 disenadores_stats[d_nombre]["total"] += 1
-                if o.estado in [EstadoOrdenEnum.ENTREGADO, EstadoOrdenEnum.LISTO_ENTREGAR]:
+                if o.estado in [EstadoOrdenEnum.COMPLETADO, EstadoOrdenEnum.LISTO_INSTALAR_ENTREGAR]:
                     disenadores_stats[d_nombre]["completados"] += 1
                 else:
                     disenadores_stats[d_nombre]["en_progreso"] += 1
 
-        # 2. Top Clientes
+        # 2. Top Clientes (Calculado a nivel de Pedidos únicos para evitar duplicar montos y conteo)
         clientes_stats = {}
-        for o in ordenes_mes:
-            c_nombre = o.cliente.nombre_empresa
+        for p in pedidos_mes:
+            c_nombre = p.cliente.nombre_empresa
             if c_nombre not in clientes_stats:
                 clientes_stats[c_nombre] = {
                     "pedidos_count": 0,
                     "total_usd": 0.0
                 }
             clientes_stats[c_nombre]["pedidos_count"] += 1
-            clientes_stats[c_nombre]["total_usd"] += obtener_total_usd(o.pedido) if o.pedido else 0.0
+            clientes_stats[c_nombre]["total_usd"] += obtener_total_usd(p)
             
         top_clientes = []
         for name, stats in clientes_stats.items():
@@ -814,7 +817,11 @@ def get_orden_detalle(orden_id):
             "duracion": duracion_actual,
             "pedido": pedido_info,
             "articulos": otros_articulos,
-            "cronologia_pagos": cronologia_pagos
+            "cronologia_pagos": cronologia_pagos,
+            "diagnostico_defectos": o.diagnostico_defectos or "",
+            "diagnostico_detalles": o.diagnostico_detalles or "",
+            "diagnostico_insumos": o.diagnostico_insumos or "",
+            "diagnostico_observaciones": o.diagnostico_observaciones or ""
         }
         return jsonify(data), 200
     except Exception as e:

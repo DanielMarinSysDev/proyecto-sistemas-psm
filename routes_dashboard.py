@@ -194,7 +194,6 @@ def vista_dashboard():
                 h = hmac.new(key.encode('utf-8'), str(o.pedido_id).encode('utf-8'), hashlib.sha256)
                 token = h.hexdigest()[:16]
                 public_url = f"/publico/pedido/{o.pedido_id}/{token}"
-
             ordenes_data.append({
                 "id": o.id,
                 "nombre_proyecto": o.nombre_proyecto,
@@ -219,7 +218,11 @@ def vista_dashboard():
                 "requiere_cotizacion": o.requiere_cotizacion,
                 "cliente_telefono": o.cliente.telefono if o.cliente else "",
                 "cliente_contacto": o.cliente.contacto_nombre or o.cliente.nombre_empresa if o.cliente and (o.cliente.contacto_nombre or o.cliente.nombre_empresa) else "Cliente",
-                "public_url": public_url
+                "public_url": public_url,
+                "diagnostico_defectos": o.diagnostico_defectos or "",
+                "diagnostico_detalles": o.diagnostico_detalles or "",
+                "diagnostico_insumos": o.diagnostico_insumos or "",
+                "diagnostico_observaciones": o.diagnostico_observaciones or ""
             })
             
         return render_template('dashboard.html', ordenes=ordenes_data, disenadores=disenadores_data)
@@ -683,6 +686,47 @@ def asignar_disenador(orden_id):
             "mensaje": f"Asignado a {disenador.nombre}",
             "disenador_nombre": disenador.nombre
         }), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
+@dashboard_bp.route('/api/ordenes/<int:orden_id>/diagnostico', methods=['PUT'])
+@login_required
+@role_required(RolEnum.ADMIN, RolEnum.GERENCIA, RolEnum.DISENADOR, RolEnum.PRODUCCION, RolEnum.INSTALADOR)
+def actualizar_diagnostico(orden_id):
+    """
+    Endpoint para actualizar interactivamente el informe de diagnóstico técnico.
+    """
+    data = request.json
+    if not data:
+        return jsonify({"error": "No se enviaron datos"}), 400
+        
+    session = Session()
+    try:
+        orden = session.query(OrdenTrabajo).filter_by(id=orden_id).first()
+        if not orden:
+            return jsonify({"error": "Orden no encontrada"}), 404
+            
+        orden.diagnostico_defectos = data.get('defectos')
+        orden.diagnostico_detalles = data.get('detalles')
+        orden.diagnostico_insumos = data.get('insumos')
+        orden.diagnostico_observaciones = data.get('observaciones')
+        
+        # Registrar Auditoría
+        from flask import session as flask_session
+        usuario_id = flask_session.get('usuario_id', 1)
+        log = LogAuditoria(
+            usuario_id=usuario_id,
+            orden_id=orden.id,
+            accion="DIAGNÓSTICO TÉCNICO",
+            detalles=f"Se actualizó el informe de diagnóstico/servicio técnico para el artículo"
+        )
+        session.add(log)
+        session.commit()
+        
+        return jsonify({"mensaje": "Diagnóstico actualizado con éxito"}), 200
     except Exception as e:
         session.rollback()
         return jsonify({"error": str(e)}), 500

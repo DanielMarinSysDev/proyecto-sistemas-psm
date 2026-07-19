@@ -144,17 +144,26 @@
                             <span class="truncate font-medium text-slate-300" x-text="orden.cliente"></span>
                         </div>
                         
-                        <!-- Acciones Rápidas (Adjuntos) -->
-                        {% if session.get('usuario_rol') in ['Administrador', 'Técnico de Diagnóstico'] %}
-                        <div class="mb-3 pl-2 flex items-center gap-2" x-show="orden.estado === 'En Diagnóstico' || orden.estado === 'En Revisión (Presupuesto)'">
-                            <input type="file" :id="'file_' + orden.id" class="hidden" @change="uploadMuestra(orden, $event)" accept=".jpg,.jpeg,.png,.pdf">
-                            <button @click="document.getElementById('file_' + orden.id).click()" class="text-xs bg-slate-900/80 hover:bg-slate-700 text-blue-300 border border-blue-900/50 px-2 py-1 rounded flex items-center transition-colors">
-                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                Subir Informe / Diagnóstico
+                        <!-- Acciones Rápidas (Diagnóstico Interactivo) -->
+                        <div class="mb-3 pl-2 flex flex-wrap gap-2">
+                            {% if session.get('usuario_rol') in ['Administrador', 'Técnico de Diagnóstico', 'Técnico de Reparación', 'Técnico de Campo', 'Gerencia'] %}
+                            <button @click.stop="abrirDiagnostico(orden)" class="text-[11px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 px-2.5 py-1.5 rounded-lg flex items-center transition-all font-semibold shadow-md">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                Informe Técnico
                             </button>
-                            <span :id="'upload_status_' + orden.id" class="text-xs text-emerald-400 font-medium hidden">¡Subida!</span>
+                            {% endif %}
+                            
+                            {% if session.get('usuario_rol') in ['Administrador', 'Técnico de Diagnóstico'] %}
+                            <div x-show="orden.estado === 'En Diagnóstico' || orden.estado === 'En Revisión (Presupuesto)'" class="inline-block">
+                                <input type="file" :id="'file_' + orden.id" class="hidden" @change="uploadMuestra(orden, $event)" accept=".jpg,.jpeg,.png,.pdf">
+                                <button @click.stop="document.getElementById('file_' + orden.id).click()" class="text-[11px] bg-slate-900 hover:bg-slate-700 text-blue-300 border border-slate-750 px-2 py-1.5 rounded-lg flex items-center transition-all">
+                                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    Adjuntar Archivo
+                                </button>
+                                <span :id="'upload_status_' + orden.id" class="text-xs text-emerald-400 font-medium hidden ml-1">¡Subida!</span>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
                         
                         <div class="border-t border-slate-700/70 pt-3 flex justify-between items-center pl-2">
                             
@@ -618,6 +627,71 @@
                 </button>
             </div>
         </div>
+    <!-- Modal para Informe y Diagnóstico Técnico Interactivo -->
+    <div x-show="diagnosticoModalOpen" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         style="display: none;">
+        
+        <div class="bg-slate-900 border border-slate-700/60 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative overflow-hidden flex flex-col max-h-[90vh]" @click.away="diagnosticoModalOpen = false">
+            <!-- Glassy background blobs -->
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0 relative z-10">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Informe & Diagnóstico Técnico</h3>
+                        <p class="text-xs text-slate-400">Registra y actualiza progresivamente el estado técnico del dispositivo</p>
+                    </div>
+                </div>
+                <button @click="diagnosticoModalOpen = false" class="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Body Form -->
+            <form @submit.prevent="guardarDiagnostico()" class="flex-1 overflow-y-auto py-4 space-y-4 pr-1 custom-scrollbar relative z-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fallas / Defectos Detectados</label>
+                        <textarea x-model="diagnosticoForm.defectos" rows="4" placeholder="Ej: Pantalla partida, conector de carga sulfatado..." class="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder-slate-600"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Detalles del Servicio / Diagnóstico</label>
+                        <textarea x-model="diagnosticoForm.detalles" rows="4" placeholder="Ej: Pruebas de encendido, consumo de amperaje en placa..." class="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder-slate-600"></textarea>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Insumos / Repuestos Requeridos</label>
+                        <textarea x-model="diagnosticoForm.insumos" rows="4" placeholder="Ej: Pin de carga tipo C, pasta térmica disipadora..." class="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder-slate-600"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Observaciones Adicionales</label>
+                        <textarea x-model="diagnosticoForm.observaciones" rows="4" placeholder="Ej: El dispositivo fue mojado previamente, cliente solicita cambio..." class="w-full bg-slate-950 border border-slate-850 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder-slate-600"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-800 shrink-0">
+                    <button type="button" @click="diagnosticoModalOpen = false" class="px-5 py-2 text-sm font-semibold bg-slate-850 hover:bg-slate-800 text-slate-350 hover:text-white rounded-lg transition-colors border border-slate-800">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/25">
+                        Guardar Informe
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </div>
@@ -654,6 +728,14 @@
             qrModalOpen: false,
             qrModalUrl: '',
             qrModalPedidoId: '',
+            diagnosticoModalOpen: false,
+            diagnosticoOrderId: null,
+            diagnosticoForm: {
+                defectos: '',
+                detalles: '',
+                insumos: '',
+                observaciones: ''
+            },
             statesList: [
                 "Borrador",
                 "Pendiente (Ingreso)",
@@ -954,6 +1036,42 @@
                     console.error("Error de conexión al obtener archivos:", e);
                 } finally {
                     this.filesModalLoading = false;
+                }
+            },
+
+            abrirDiagnostico(orden) {
+                this.diagnosticoOrderId = orden.id;
+                this.diagnosticoForm.defectos = orden.diagnostico_defectos || '';
+                this.diagnosticoForm.detalles = orden.diagnostico_detalles || '';
+                this.diagnosticoForm.insumos = orden.diagnostico_insumos || '';
+                this.diagnosticoForm.observaciones = orden.diagnostico_observaciones || '';
+                this.diagnosticoModalOpen = true;
+            },
+
+            async guardarDiagnostico() {
+                try {
+                    const response = await fetch(`/api/ordenes/${this.diagnosticoOrderId}/diagnostico`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.diagnosticoForm)
+                    });
+                    
+                    if (response.ok) {
+                        const order = this.orders.find(o => o.id === this.diagnosticoOrderId);
+                        if (order) {
+                            order.diagnostico_defectos = this.diagnosticoForm.defectos;
+                            order.diagnostico_detalles = this.diagnosticoForm.detalles;
+                            order.diagnostico_insumos = this.diagnosticoForm.insumos;
+                            order.diagnostico_observaciones = this.diagnosticoForm.observaciones;
+                        }
+                        this.diagnosticoModalOpen = false;
+                        alert('¡Diagnóstico guardado exitosamente!');
+                    } else {
+                        const data = await response.json();
+                        alert('Error al guardar: ' + data.error);
+                    }
+                } catch(e) {
+                    alert('Error de conexión');
                 }
             }
         }));
