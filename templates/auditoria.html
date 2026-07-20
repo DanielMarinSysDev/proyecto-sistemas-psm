@@ -107,7 +107,8 @@
     <!-- Title displayed only when printing -->
     <div class="hidden print-only-header mb-5 border-b-2 border-slate-900 pb-3">
         <div class="flex items-center justify-between">
-            <div class="flex items-center">                <!-- TaskCore Full Logo (Exact copy from base.html for print) -->
+            <div class="flex items-center">
+                <!-- TaskCore Full Logo (Exact copy from base.html for print) -->
                 <svg class="print-logo-img mr-4" viewBox="0 0 1442.46 170.18" xmlns="http://www.w3.org/2000/svg">
                     <g fill="#0f172a">
                         <path d="M757.26,66.29v37.61c0,13.27,10.76,24.03,24.03,24.03h93.02c3.07,0,5.54,2.48,5.54,5.54v20.33c0,3.07-2.48,5.54-5.54,5.54h-97.91c-29.26,0-52.99-23.71-52.99-52.99v-40.07c0-30.62,24.82-55.44,55.44-55.44h95.45c3.07,0,5.54,2.48,5.54,5.54v20.33c0,3.07-2.48,5.54-5.54,5.54h-93.02c-13.27,0-24.03,10.76-24.03,24.03Z"/>
@@ -133,7 +134,7 @@
                         <path d="M990.34,41.87v20.31c3.74,1.07,7.21,3.06,10.07,5.85l17.57-10.15c-7.01-8.84-16.98-14.38-27.64-16.01Z"/>
                         <path d="M1024.51,69.23l-17.6,10.16c.95,3.84.9,7.81-.04,11.54l17.57,10.15c3.93-10.01,4.16-21.38.07-31.85Z"/>
                     </g>
-                </svg>>
+                </svg>
             </div>
             <div class="text-right">
                 <h1 class="text-lg font-bold text-slate-900 uppercase tracking-wide">Reporte Oficial de Auditoría y Logs del Sistema</h1>
@@ -141,7 +142,7 @@
                 <p class="text-[10px] text-slate-600">Impreso por: {{ session.get('usuario_nombre', 'Administrador') }} | Fecha: <span id="print-date-span"></span></p>
             </div>
         </div>
-    </div>       <script>
+        <script>
             window.addEventListener('beforeprint', () => {
                 const dateSpan = document.getElementById('print-date-span');
                 if (dateSpan) {
