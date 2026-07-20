@@ -126,7 +126,24 @@ Para artículos que requieren revisión y reparación física en laboratorios, T
 
 ---
 
-## 5. Preguntas Frecuentes y Qué Esperar
+## 6. Expediente Digital (Master Data) y Reportes de Impresión A4
+
+### A. Directorio de Clientes y Expediente Digital (Master Data)
+* **Acceso**: En la vista de **Directorio de Clientes** (`/clientes`), cada cliente cuenta con un botón azul **"Master Data"**.
+* **Visualización Inteligente**:
+  * **En la Nube (Render/Supabase)**: Muestra la insignia `☁️ Almacenamiento Nube Sincronizado` permitiendo ver y descargar todos los archivos adjuntos directamente desde la web.
+  * **En Red Local (LAN)**: Permite copiar la ruta física local del servidor para abrir la carpeta directamente en Windows Explorer.
+* **Previsualizaciones Ricas**: Cada orden de trabajo en el historial del cliente genera un grid visual con:
+  * Miniaturas automáticas de imágenes adjuntas e inspección a pantalla completa.
+  * Badges identificadores de documentos PDF y archivos con botones de **Descarga directa**.
+
+### B. Módulo de Reportes y Auditoría A4 (PDF)
+* **Formato Ejecutivo Standard**: Las vistas de **Reportes Financieros** (`/reportes`) y **Auditoría de Logs** (`/auditoria`) están optimizadas para impresión en hoja A4.
+* **Vectorización Perfecta**: Los reportes impresos utilizan el logo vectorial corporativo oficial `TASKCORE`, garantizando nitidez completa y sin recortes al guardar como PDF o imprimir en papel.
+
+---
+
+## 7. Preguntas Frecuentes y Qué Esperar
 
 #### ¿Cómo se crean las carpetas físicas de un pedido?
 Al confirmar un pedido, se activa el flujo y se crean automáticamente las carpetas estructuradas en el servidor.

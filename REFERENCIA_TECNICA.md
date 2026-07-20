@@ -68,12 +68,19 @@ El motor `file_manager.py` genera la siguiente estructura física basada en la v
 *   `GET /api/buscar?q=...`: Búsqueda global (segura, no expone datos financieros).
 *   `GET /usuarios`: Panel de administración de usuarios. Acceso para `Administrador` y `Gerencia`.
 *   `POST /api/usuarios` / `PUT /api/usuarios/<id>` / `DELETE /api/usuarios/<id>`: Gestión de usuarios (Crear, Editar, Eliminar). Permitido para `Administrador` y `Gerencia`. Si el usuario activo es `Gerencia`, el backend y frontend bloquean y validan que solo se operen cuentas con roles inferiores a Gerencia (no se puede crear/editar/eliminar a Administradores u otros Gerentes).
+*   `GET /api/clientes/<id>/expediente`: Endpoint de Master Data que retorna el expediente digital completo (saldo a favor, ruta master y array de órdenes enriquecido con `url_preview`, `url_descarga` y clasificación `tipo`).
+*   `GET /api/ordenes/<id>/preview/<filename>`: Endpoint para la generación de thumbnails y previsualización segura de imágenes en línea.
+*   `GET /api/ordenes/<id>/descargar-archivo/<filename>`: Endpoint seguro para servir la descarga directa de archivos adjuntos usando `send_from_directory`.
 *   `POST /api/mantenimiento/respaldar` / `POST /api/mantenimiento/restaurar`: Mantenimiento y copias de seguridad de la base de datos PostgreSQL.
 *   `POST /api/admin/system/update`: Actualización remota del sistema desde el repositorio de Git.
 
-## 7. Apariencia y Temas
+## 7. Apariencia, Temas y Estándar de Impresión A4
 *   **Azul Corporativo:** `#0278D2`
-*   **Tema Claro/Oscuro:** Gestionado en el cliente vía `toggleTheme()` en `base.html`. Guarda la preferencia de usuario en `localStorage.theme` y añade la clase `.dark` a la etiqueta `<html>`.
+*   **Tema Claro/Oscuro:** Gestionado en el cliente vía `toggleTheme()` en `base.html`. Guarda la preferencia de usuario en `localStorage.theme` y añade la clase `.dark` a la etiqueta `<html>`. Selectores específicos `.light` fuerzan el contraste tipográfico (`text-slate-100` y `text-slate-200` ajustados a slate oscuro) evitando invisibilidad en fondo claro.
+*   **Estándar de Impresión PDF / A4 (`@media print`)**:
+    *   Plantillas estandarizadas: `reportes.html` y `auditoria.html`.
+    *   Uso obligatorio del **SVG oficial de 20 trazos** (`viewBox="0 0 1442.46 170.18"`) en el header de impresión para preservar la tipografía completa `TASKCORE` sin recortes.
+    *   Estructura DOM estricta: Las etiquetas SVG de impresión deben cerrarse limpiamente (`</svg>`) sin caracteres extra y aisladas en el contenedor `.print-only` para prevenir que el footer invada el header.
 *   **Interactividad:** Controlada con Alpine.js. Las variables globales reactivas se inicializan directamente en los nodos contenedores con `x-data`.
 
 ## 8. Despliegue, Puertos y Variables de Entorno

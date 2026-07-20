@@ -36,10 +36,15 @@ El sistema se encuentra en un estado funcional completo y maduro con las siguien
   * Implementación de la propiedad `ocultar_precio_ventas` en pedidos.
   * Censura automática de importes monetarios y desgloses de abono en los endpoints del backend para roles limitados (Ventas, Diseñador, Producción, Instalador).
   * Renderizado seguro en el frontend que muestra `[RESERVADO]` en lugar de importes financieros.
-* **Diseño y Apariencia**:
-  * Estética Premium con Glassmorphism, paleta corporativa azul (#0278D2), y soporte nativo para **Tema Claro** y **Tema Oscuro** con persistencia local.
-  * Favicon corporativo y logotipos vectoriales dinámicos configurados.
-  * PWA 100% instalable con manifiesto de aplicación y variaciones del logotipo en azul, blanco y negro.
+* **Diseño, Impresión A4 y Apariencia**:
+  * **Sistema de Impresión A4 (Print Media Standard)**: Layout ejecutivo estandarizado mediante `@media print` en los módulos de *Reportes* y *Auditoría de Logs*.
+  * **Logo Vectorial Oficial Completo**: Sustitución de los SVGs fragmentados por la plantilla oficial de 20 trazos vectoriales (`viewBox="0 0 1442.46 170.18"`), garantizando nitidez perfecta en exportaciones de PDF.
+  * **Reglas de Contraste Sensibles al Tema (Light/Dark Mode)**: Corrección de jerarquía tipográfica con selectores `.light` forzados para garantizar legibilidad completa en modo claro sin alterar el modo oscuro.
+  * PWA 100% instalable con manifiesto de aplicación y variaciones del logotipo corporativo azul (#0278D2).
+* **Expediente Digital y Master Data Inteligente**:
+  * **Previsualización Rica de Archivos**: Galería con miniaturas automáticas (`url_preview`), visualizador a pantalla completa de imágenes y accesos de descarga directa para documentos PDF y archivos adjuntos en el expediente de cada cliente.
+  * **Adaptación a Entornos Cloud vs LAN**: Detección inteligente de despliegue en la nube (Render / Supabase) que adapta el encabezado del cliente (`☁️ Almacenamiento Nube Sincronizado`) y deshabilita alertas de carpetas LAN no aplicables.
+  * **Autocuración de Esquema de Base de Datos**: Inicialización automatizada en `database_models.py` para asegurar la persistencia de la columna `saldo_favor` en la tabla `clientes`.
 
 ## 3. Roles de Usuario y Permisos (RBAC)
 * **Administrador**: Acceso ilimitado. Puede crear, editar y eliminar cualquier usuario de cualquier rol en el sistema, resolver incidencias (incluyendo cotizaciones especiales), fijar precios de cotizaciones manuales, ocultar/mostrar precios (toggling the `ocultar_precio_ventas` option) y realizar mantenimiento del sistema (respaldos y restauraciones).
