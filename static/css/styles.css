@@ -235,6 +235,16 @@ html:not(.dark) textarea:focus {
     box-shadow: 0 0 0 2px rgba(2, 120, 210, 0.2) !important;
 }
 
+/* Placeholder contrast fixes for both themes */
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #94a3b8 !important; /* Legible muted light gray */
+}
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+    color: #475569 !important; /* Legible muted dark gray */
+}
+
 /* Readonly fields styling in both themes */
 input[readonly] {
     background-color: rgba(30, 41, 59, 0.4) !important;
@@ -301,15 +311,42 @@ html:not(.dark) button.bg-violet-600\/20 * {
     color: #ffffff !important;
 }
 
-html:not(.dark) button.text-blue-400 {
+html:not(.dark) button.bg-blue-600\/20,
+html:not(.dark) button.bg-blue-600\/40 {
+    background-color: #2563eb !important; /* Solid blue */
+    color: #ffffff !important;
+    border-color: #1d4ed8 !important;
+}
+html:not(.dark) button.bg-blue-600\/20 *,
+html:not(.dark) button.bg-blue-600\/40 * {
+    color: #ffffff !important;
+}
+
+html:not(.dark) button.bg-amber-600\/30,
+html:not(.dark) button.bg-amber-600\/50 {
+    background-color: #d97706 !important; /* Solid amber */
+    color: #ffffff !important;
+    border-color: #b45309 !important;
+}
+html:not(.dark) button.bg-amber-600\/30 *,
+html:not(.dark) button.bg-amber-600\/50 * {
+    color: #ffffff !important;
+}
+
+html:not(.dark) button.text-blue-400,
+html:not(.dark) button.text-blue-300,
+html:not(.dark) a.text-blue-300 {
     background-color: var(--brand-blue) !important; /* Solid blue */
     color: #ffffff !important;
     border-color: var(--brand-blue-hover) !important;
 }
-html:not(.dark) button.text-blue-400:hover {
+html:not(.dark) button.text-blue-400:hover,
+html:not(.dark) button.text-blue-300:hover,
+html:not(.dark) a.text-blue-300:hover {
     background-color: var(--brand-blue-hover) !important;
 }
-html:not(.dark) button.text-blue-400 * {
+html:not(.dark) button.text-blue-400 *,
+html:not(.dark) button.text-blue-300 * {
     color: #ffffff !important;
 }
 

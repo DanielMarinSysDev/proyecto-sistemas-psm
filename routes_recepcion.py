@@ -958,6 +958,72 @@ def editar_borrador(orden_id):
     finally:
         session.close()
 
+@recepcion_bp.route('/api/ordenes/<int:orden_id>/presupuesto', methods=['PUT'])
+@login_required
+@role_required(RolEnum.ADMIN, RolEnum.GERENCIA)
+def actualizar_presupuesto(orden_id):
+    """
+    Permite a Administradores y Gerencia editar el presupuesto (monto total)
+    de una orden y opcionalmente aprobar el presupuesto pasando el estado a Reparación Aprobada.
+    """
+    data = request.json or {}
+    monto_total = data.get('monto_total')
+    aprobar = data.get('aprobar', False)
+    usuario_id = flask_session.get('usuario_id', 1)
+
+    if monto_total is None:
+        return jsonify({"error": "Falta especificar el nuevo monto total"}), 400
+
+    try:
+        nuevo_monto = float(monto_total)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Monto inválido"}), 400
+
+    session = Session()
+    try:
+        orden = session.query(OrdenTrabajo).filter_by(id=orden_id).first()
+        if not orden:
+            return jsonify({"error": "Orden no encontrada"}), 404
+
+        orden.precio_unitario = nuevo_monto
+        if orden.pedido:
+            articulos = orden.pedido.articulos or []
+            total_sum = 0.0
+            for art in articulos:
+                if art.id == orden.id:
+                    total_sum += nuevo_monto
+                elif art.precio_unitario is not None:
+                    total_sum += float(art.precio_unitario)
+                else:
+                    total_sum += art.precio_proporcional
+            orden.pedido.monto_total = total_sum
+
+        if aprobar:
+            orden.estado = EstadoOrdenEnum.APROBADO
+            if orden.requiere_cotizacion:
+                orden.requiere_cotizacion = False
+
+        # Auditoría
+        log = LogAuditoria(
+            usuario_id=usuario_id,
+            orden_id=orden.id,
+            accion="Actualización Presupuesto",
+            detalles=f"Presupuesto ajustado a ${nuevo_monto:.2f} USD." + (" Aprobado para reparación." if aprobar else "")
+        )
+        session.add(log)
+        session.commit()
+
+        return jsonify({
+            "mensaje": "Presupuesto actualizado exitosamente",
+            "nuevo_monto": nuevo_monto,
+            "nuevo_estado": orden.estado.value
+        }), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
+
 @recepcion_bp.route('/api/borradores/<int:orden_id>', methods=['DELETE'])
 @login_required
 @role_required(RolEnum.ADMIN, RolEnum.VENTAS)

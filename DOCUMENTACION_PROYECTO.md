@@ -25,6 +25,13 @@ El sistema se encuentra en un estado funcional completo y maduro con las siguien
   * **Acabados Dinámicos de Banner**: Los acabados y adicionales de banner (como ojetes, pendones armados o bastidores) se gestionan como adicionales en la base de datos (`es_adicional=True`), eliminando listas estáticas y dropdowns anidados.
   * **Semaforización Visual**: En la administración de tarifas, badges semáforo diferencian con colores de alto contraste los *Materiales Base* de los *Acabados y Adicionales*.
   * Resolución de presupuesto directamente desde el Kanban (por Admin/Gerencia) con opción de ocultar el precio al personal de Ventas/Recepción.
+  * **Nuevo Endpoint de Ajuste Directo de Presupuesto (`PUT /api/ordenes/<id>/presupuesto`)**: Permite a usuarios elevados actualizar montos de diagnósticos/reparaciones y aprobar directamente el avance a *Reparación Aprobada* sin necesidad de crear una Cotización Especial.
+  * **Descuentos y Reembolsos Porcentuales**: Sistema de cancelación con asignación rápida de saldos a favor (100% total, 50% mitad, 0% retener todo).
+* **Refactorización de Arquitectura y Reducción de Deuda Técnica**:
+  * **Almacenamiento de Precio Unitario (`precio_unitario`)**: La entidad `OrdenTrabajo` almacena explícitamente el precio unitario del artículo o servicio, priorizándolo sobre las divisiones proporcionales simples. Esto asegura una contabilidad exacta en pedidos de múltiples artículos con diferentes montos.
+  * **Modularización Total de Javascript (`static/js/`)**: Decoupling completo de la lógica reactiva en archivos externos dedicados (`kanban_board.js`, `recepcion.js`, `finanzas.js`), eliminando scripts *inline* en las plantillas HTML para maximizar la mantenibilidad y modularidad.
+  * **Vista Compacta / Detallada en Tablero Kanban**: Implementación de tarjetas colapsables con un interruptor global (Vista Compacta ↔ Vista Detallada) y botones de colapso individual (`colapsada`), permitiendo reducir el ruido visual cuando existen numerosas órdenes simultáneas.
+  * **Propiedades de Modelo Encapsuladas (`database_models.py`)**: `OrdenTrabajo.precio_proporcional`, `OrdenTrabajo.abono_proporcional` y `OrdenTrabajo.saldo_pendiente_proporcional` centralizan los cálculos multi-artículo.
 * **Seguridad de Precios y Roles**:
   * Implementación de la propiedad `ocultar_precio_ventas` en pedidos.
   * Censura automática de importes monetarios y desgloses de abono en los endpoints del backend para roles limitados (Ventas, Diseñador, Producción, Instalador).

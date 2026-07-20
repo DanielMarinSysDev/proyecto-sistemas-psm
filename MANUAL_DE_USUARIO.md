@@ -98,7 +98,35 @@ Para mantener la seguridad financiera e informática, cada rol tiene permisos es
 
 ---
 
-## 4. Preguntas Frecuentes y Qué Esperar
+## 4. Módulo de Diagnóstico y Reparación Técnica
+
+Para artículos que requieren revisión y reparación física en laboratorios, TaskCore implementa un flujo secuencial e interactivo en el Tablero Kanban:
+
+### A. Ciclo de Vida del Artículo
+1. **Ingreso/Pendiente**: El dispositivo es recibido y registrado.
+2. **En Diagnóstico**: El técnico a cargo toma la tarea, desarma/inspecciona el equipo y hace clic en **"Informe Técnico"** en la tarjeta. Registra fallas y el listado de insumos/repuestos requeridos.
+3. **En Revisión (Presupuesto)**:
+   * Si el servicio requiere de repuestos costosos o no catalogados, el técnico reporta una **Cotización Especial**.
+   * La Gerencia es notificada, revisa el diagnóstico cargado por el técnico, ingresa el precio final aprobado para la reparación y aprueba la cotización.
+4. **Reparación Aprobada**: El cliente aprueba los costos y el equipo queda listo para ser intervenido.
+5. **En Reparación / Servicio**: El técnico ejecuta el trabajo de reparación. Durante este estado, el técnico puede **modificar y actualizar progresivamente el Informe Técnico** agregando notas de progreso o nuevos hallazgos sobre la marcha sin tener que crear una orden nueva.
+6. **Listo para Entregar**: Se realizan pruebas de control de calidad finales y el equipo queda listo para retiro del cliente.
+
+### B. Insumos vs. Facturación
+* **No hay redundancia**: El campo "Insumos/Repuestos Requeridos" del informe técnico es un registro puramente técnico provisto por el laboratorista. Sirve de insumo para que la administración determine los ítems y montos finales que se reflejarán en la facturación final.
+* **Servicio sin Repuestos**: Si la reparación es simple (limpieza de componentes, configuración básica), el técnico omite el campo de repuestos (registra *"Ninguno"*) y avanza directamente el estado.
+* **Transición de Solo Diagnóstico a Reparación**: Si un cliente ingresa un equipo para *"Solo Diagnóstico"* (con una tarifa inicial de revisión de ej. $15) y luego aprueba la reparación propuesta, **no se debe crear un nuevo Pedido ni una nueva tarjeta**. La administración (Admin / Gerencia) simplemente hace clic en el botón **"Editar Presupuesto"** en la tarjeta del Kanban para ajustar el precio total del servicio. Puede seleccionar **"Guardar Precio"** o **"Guardar y Aprobar"** (que promueve la orden automáticamente a *Reparación Aprobada*). El sistema recalculará automáticamente el monto total del pedido y la deuda pendiente (`Saldo = Nuevo Total - Abonos`), manteniendo intacto el enlace de seguimiento del cliente y el código QR.
+
+### C. Cancelación y Reembolso Porcentual
+* **Manejo de Cancelación**: Al cancelar una orden con abono previo, el usuario elevado puede definir qué porcentaje del abono se le acredita al cliente como **Saldo a Favor**.
+* **Preajustes Rápido**: El modal de cancelación ofrece botones de asignación directa:
+  * `[ 100% Total ]`: Devuelve el 100% del dinero abonado.
+  * `[ 50% Mitad ]`: Asigna la mitad del abono como saldo a favor (reteniendo el 50% restante por concepto de gastos operativos o revisión).
+  * `[ 0% Retener Todo ]`: Retiene el abono completo ($0 devolución).
+
+---
+
+## 5. Preguntas Frecuentes y Qué Esperar
 
 #### ¿Cómo se crean las carpetas físicas de un pedido?
 Al confirmar un pedido, se activa el flujo y se crean automáticamente las carpetas estructuradas en el servidor.

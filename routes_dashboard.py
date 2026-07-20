@@ -171,16 +171,8 @@ def vista_dashboard():
                 if usuario_rol in [RolEnum.VENTAS.value, RolEnum.DISENADOR.value, RolEnum.INSTALADOR.value]:
                     ocultar_precio = True
 
-            if o.pedido and o.pedido.estado_pago != "Cancelado" and o.pedido.monto_total:
-                total = o.pedido.monto_total
-                if o.pedido.estado_pago == "Por Cancelar":
-                    abono = 0.0
-                else: # Es "Abono"
-                    from routes_finanzas import extraer_monto_numerico
-                    abono = extraer_monto_numerico(o.pedido.monto_abono)
-                saldo = max(0.0, total - abono)
-            
-            monto_total_val = o.pedido.monto_total if o.pedido else 0.0
+            monto_total_val = o.precio_proporcional
+            saldo = o.saldo_pendiente_proporcional
             if ocultar_precio:
                 saldo = None
                 monto_total_val = None

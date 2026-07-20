@@ -166,6 +166,7 @@ class OrdenTrabajo(Base):
     # Asignación
     disenador_id = Column(Integer, ForeignKey('usuarios.id'), nullable=True)
     requiere_cotizacion = Column(Boolean, default=False, server_default="0")
+    precio_unitario = Column(Float, nullable=True)
     
     # Relaciones
     pedido = relationship("Pedido", back_populates="articulos")
@@ -174,6 +175,33 @@ class OrdenTrabajo(Base):
     archivos = relationship("Archivo", back_populates="orden", cascade="all, delete-orphan")
     logs = relationship("LogAuditoria", back_populates="orden", cascade="all, delete-orphan")
     incidencias = relationship("Incidencia", back_populates="orden", cascade="all, delete-orphan")
+
+    @property
+    def precio_proporcional(self):
+        """Monto total atribuible a esta tarjeta individual (OrdenTrabajo). Si existe precio_unitario específico se usa directamente."""
+        if self.precio_unitario is not None and self.precio_unitario > 0:
+            return float(self.precio_unitario)
+        if not self.pedido or not self.pedido.monto_total:
+            return 0.0
+        num_articulos = len(self.pedido.articulos) if self.pedido.articulos else 1
+        return self.pedido.monto_total / float(max(1, num_articulos))
+
+    @property
+    def abono_proporcional(self):
+        """Abono registrado atribuible a esta tarjeta individual."""
+        if not self.pedido or self.pedido.estado_pago == "Por Cancelar":
+            return 0.0
+        if self.pedido.estado_pago == "Cancelado":
+            return self.precio_proporcional
+        from routes_finanzas import extraer_monto_numerico
+        abono_total = extraer_monto_numerico(self.pedido.monto_abono)
+        num_articulos = len(self.pedido.articulos) if self.pedido.articulos else 1
+        return abono_total / float(max(1, num_articulos))
+
+    @property
+    def saldo_pendiente_proporcional(self):
+        """Saldo pendiente atribuible a esta tarjeta individual."""
+        return max(0.0, self.precio_proporcional - self.abono_proporcional)
 
 class Archivo(Base):
     """
