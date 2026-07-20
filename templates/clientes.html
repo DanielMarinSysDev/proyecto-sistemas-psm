@@ -3,86 +3,184 @@
 {% block title %}Directorio de Clientes - TaskCore{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-white tracking-tight">Directorio de Clientes</h1>
-    <p class="text-slate-400 mt-1">Gestión de empresas y Master Data</p>
-</div>
+<div x-data="clientesModule()">
+    
+    <!-- Encabezado y Acciones Principal -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Directorio de Clientes</h1>
+            <p class="text-slate-400 mt-1 text-sm">Gestión de empresas, saldo a favor y repositorios de Master Data</p>
+        </div>
+        
+        {% if session.get('usuario_rol') in ['Administrador', 'Gerencia', 'Recepción / Soporte', 'Ventas'] %}
+        <button @click="abrirModalCrear()" class="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-blue-600/25 gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>Nuevo Cliente</span>
+        </button>
+        {% endif %}
+    </div>
 
-<div x-data="clientesModule()" class="glass-panel p-6 rounded-2xl border border-slate-700/50 shadow-xl relative">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="border-b border-slate-700/50">
-                    <th class="py-3 px-4 font-semibold text-slate-300">Empresa</th>
-                    <th class="py-3 px-4 font-semibold text-slate-300">Contacto</th>
-                    <th class="py-3 px-4 font-semibold text-slate-300">Email</th>
-                    <th class="py-3 px-4 font-semibold text-slate-300">Teléfono</th>
-                    <th class="py-3 px-4 font-semibold text-slate-300 text-right">Ruta Master Data</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cliente in clientes %}
-                <tr class="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
-                    <td class="py-3 px-4 font-medium text-slate-200">{{ cliente.nombre_empresa }}</td>
-                    <td class="py-3 px-4 text-slate-400">{{ cliente.contacto_nombre or '-' }}</td>
-                    <td class="py-3 px-4 text-slate-400">{{ cliente.email or '-' }}</td>
-                    <td class="py-3 px-4 text-slate-400">{{ cliente.telefono or '-' }}</td>
-                    <td class="py-3 px-4 text-right">
-                        <div class="flex items-center justify-end space-x-2">
-                            <button onclick="abrirCarpetaEnServidor('{{ cliente.ruta_activos_permanentes | replace('\\', '\\\\') }}')" class="inline-flex items-center text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded transition-colors" title="Abrir Ruta de Carpeta">
-                                <svg class="w-4 h-4 mr-1.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                Ruta
-                            </button>
-                            {% if session.get('usuario_rol') in ['Administrador', 'Recepción / Soporte'] %}
-                            <button @click="abrirModalEditar({ id: {{ cliente.id }}, nombre_empresa: '{{ cliente.nombre_empresa | replace("'", "\\'") }}', contacto_nombre: '{{ cliente.contacto_nombre | replace("'", "\\'") }}', email: '{{ cliente.email | replace("'", "\\'") }}', telefono: '{{ cliente.telefono | replace("'", "\\'") }}' })" class="inline-flex items-center text-xs font-medium bg-amber-900/30 hover:bg-amber-800/50 text-amber-400 px-3 py-1.5 rounded border border-amber-500/30 transition-colors" title="Editar Cliente">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            </button>
-                            <button onclick="eliminarCliente({{ cliente.id }})" class="inline-flex items-center text-xs font-medium bg-red-900/30 hover:bg-red-800/50 text-red-400 px-3 py-1.5 rounded border border-red-500/30 transition-colors" title="Eliminar Cliente">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+    <!-- Panel de Tabla de Clientes -->
+    <div class="glass-panel p-6 rounded-2xl border border-slate-700/60 shadow-2xl relative overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-700/80 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        <th class="py-3.5 px-4">Empresa</th>
+                        <th class="py-3.5 px-4">Contacto</th>
+                        <th class="py-3.5 px-4">Email</th>
+                        <th class="py-3.5 px-4">Teléfono</th>
+                        <th class="py-3.5 px-4">Saldo a Favor</th>
+                        <th class="py-3.5 px-4 text-right">Acciones / Master Data</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80 text-sm">
+                    {% for cliente in clientes %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-xs uppercase">
+                                    {{ cliente.nombre_empresa[:2] }}
+                                </div>
+                                <span class="font-semibold text-slate-200">{{ cliente.nombre_empresa }}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-300 font-medium">{{ cliente.contacto_nombre or '-' }}</td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ cliente.email or '-' }}</td>
+                        <td class="py-3.5 px-4 text-slate-400 font-mono text-xs">{{ cliente.telefono or '-' }}</td>
+                        <td class="py-3.5 px-4">
+                            {% if cliente.saldo_favor and cliente.saldo_favor > 0 %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
+                                ${{ "%.2f"|format(cliente.saldo_favor) }} USD
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-slate-500">$0.00</span>
                             {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="py-8 text-center text-slate-500">
-                        No hay clientes registrados en el sistema.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <!-- Botón Abrir Carpeta Master Data -->
+                                <button @click="abrirCarpetaEnServidor('{{ cliente.ruta_activos_permanentes | replace('\\', '\\\\') }}')" 
+                                        class="inline-flex items-center gap-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-all shadow-sm" 
+                                        title="Abrir Carpeta Master Data en Servidor">
+                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                    <span>Master Data</span>
+                                </button>
+                                
+                                {% if session.get('usuario_rol') in ['Administrador', 'Gerencia', 'Recepción / Soporte', 'Ventas'] %}
+                                <!-- Botón Editar Cliente -->
+                                <button @click="abrirModalEditar({ id: {{ cliente.id }}, nombre_empresa: '{{ cliente.nombre_empresa | replace("'", "\\'") }}', contacto_nombre: '{{ cliente.contacto_nombre | replace("'", "\\'") }}', email: '{{ cliente.email | replace("'", "\\'") }}', telefono: '{{ cliente.telefono | replace("'", "\\'") }}' })" 
+                                        class="p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 transition-all" 
+                                        title="Editar Cliente">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
+                                {% endif %}
+                                
+                                {% if session.get('usuario_rol') in ['Administrador', 'Gerencia'] %}
+                                <!-- Botón Eliminar Cliente -->
+                                <button @click="eliminarCliente({{ cliente.id }}, '{{ cliente.nombre_empresa | replace("'", "\\'") }}')" 
+                                        class="p-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30 transition-all" 
+                                        title="Eliminar Cliente">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-slate-500">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-slate-600 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            <p class="text-base font-medium">No hay clientes registrados en el sistema.</p>
+                            <p class="text-xs text-slate-600 mt-1">Utiliza el botón "+ Nuevo Cliente" para registrar una empresa.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     
+    <!-- Modal Nuevo Cliente -->
+    <div x-show="modalCrearAbierto" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="cerrarModalCrear()"></div>
+        <div class="relative bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden animate-fade-in">
+            <div class="flex justify-between items-center mb-5 border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                    Registrar Nuevo Cliente
+                </h3>
+                <button @click="cerrarModalCrear()" class="text-slate-400 hover:text-slate-200 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <form @submit.prevent="guardarNuevoCliente" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre de la Empresa / Razón Social <span class="text-red-400">*</span></label>
+                    <input type="text" x-model="nuevoCliente.nombre_empresa" required placeholder="Ej: Inversiones Alfa, C.A." class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label>
+                    <input type="text" x-model="nuevoCliente.contacto_nombre" placeholder="Ej: Carlos Pérez" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label>
+                    <input type="email" x-model="nuevoCliente.email" placeholder="cliente@empresa.com" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label>
+                    <input type="text" x-model="nuevoCliente.telefono" placeholder="Ej: 04241234567 o +584241234567" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
+                    <span class="text-[11px] text-slate-400 mt-1 block">Se asignará automáticamente la estructura Master Data en el servidor.</span>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800 mt-6">
+                    <button type="button" @click="cerrarModalCrear()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-xl transition-colors">Cancelar</button>
+                    <button type="submit" :disabled="loading" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2">
+                        <span x-show="!loading">Registrar Cliente</span>
+                        <span x-show="loading" style="display: none;">Procesando...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Editar Cliente -->
-    <div x-show="modalAbierto" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="cerrarModal()"></div>
-        <div class="relative bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md p-6 overflow-hidden">
-            <h3 class="text-xl font-bold text-white mb-4">Editar Cliente</h3>
+    <div x-show="modalEditarAbierto" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="cerrarModalEditar()"></div>
+        <div class="relative bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-md p-6 overflow-hidden animate-fade-in">
+            <div class="flex justify-between items-center mb-5 border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Editar Cliente
+                </h3>
+                <button @click="cerrarModalEditar()" class="text-slate-400 hover:text-slate-200 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
             
             <form @submit.prevent="guardarEdicion" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Empresa</label>
-                    <input type="text" x-model="clienteActual.nombre_empresa" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Empresa</label>
+                    <input type="text" x-model="clienteActual.nombre_empresa" required class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Contacto</label>
-                    <input type="text" x-model="clienteActual.contacto_nombre" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Contacto</label>
+                    <input type="text" x-model="clienteActual.contacto_nombre" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
-                    <input type="email" x-model="clienteActual.email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+                    <input type="email" x-model="clienteActual.email" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Teléfono</label>
-                    <input type="text" x-model="clienteActual.telefono" placeholder="Ej: +584248454940 (o 04248454940)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 transition-colors">
-                    <span class="text-[10px] text-slate-400 mt-1 block">Se normaliza automáticamente a formato internacional.</span>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label>
+                    <input type="text" x-model="clienteActual.telefono" placeholder="Ej: +584248454940 (o 04248454940)" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors">
+                    <span class="text-[11px] text-slate-400 mt-1 block">Se normaliza automáticamente a formato internacional.</span>
                 </div>
                 
-                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-700/50">
-                    <button type="button" @click="cerrarModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors">Cancelar</button>
-                    <button type="submit" :disabled="loading" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800 mt-6">
+                    <button type="button" @click="cerrarModalEditar()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-xl transition-colors">Cancelar</button>
+                    <button type="submit" :disabled="loading" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2">
                         <span x-show="!loading">Guardar Cambios</span>
                         <span x-show="loading" style="display: none;">Guardando...</span>
                     </button>
@@ -94,81 +192,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('clientesModule', () => ({
-        modalAbierto: false,
-        loading: false,
-        clienteActual: { id: null, nombre_empresa: '', contacto_nombre: '', email: '', telefono: '' },
-        
-        abrirModalEditar(cliente) {
-            this.clienteActual = { ...cliente };
-            this.modalAbierto = true;
-        },
-        
-        cerrarModal() {
-            this.modalAbierto = false;
-        },
-        
-        async guardarEdicion() {
-            this.loading = true;
-            try {
-                const res = await fetch(`/api/clientes/${this.clienteActual.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.clienteActual)
-                });
-                
-                const data = await res.json();
-                if(res.ok) {
-                    alert("Cliente actualizado correctamente");
-                    window.location.reload();
-                } else {
-                    alert("Error: " + data.error);
-                }
-            } catch(e) {
-                alert("Error de red");
-                console.error(e);
-            } finally {
-                this.loading = false;
-            }
-        }
-    }));
-});
-
-function eliminarCliente(id) {
-    if (confirm("¿Estás seguro de que deseas eliminar este cliente? Se eliminarán también todas sus órdenes asociadas. Esta acción no se puede deshacer.")) {
-        fetch(`/api/clientes/${id}`, {
-            method: 'DELETE'
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.mensaje) {
-                alert(data.mensaje);
-                window.location.reload();
-            } else if (data.error) {
-                alert("Error: " + data.error);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Error de conexión al intentar eliminar.");
-        });
-    }
-}
-
-function abrirCarpetaEnServidor(ruta) {
-    // 1. Opcional: Copiamos la ruta al portapapeles por si falla el protocolo
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(ruta).catch(() => {});
-    }
-    
-    // 2. Ejecutamos el protocolo personalizado que se instaló con el .reg
-    // Usamos Base64 (btoa) para evitar que el navegador mutile las rutas con "D:\" o barras invertidas
-    // UTF-8 a Base64 de forma segura
-    const utf8Ruta = unescape(encodeURIComponent(ruta));
-    const rutaCodificada = btoa(utf8Ruta);
-    window.location.href = `taskcore://${rutaCodificada}?server=${window.location.hostname}`;
-}
-</script>
+<script src="{{ url_for('static', filename='js/clientes.js') }}"></script>
 {% endblock %}
