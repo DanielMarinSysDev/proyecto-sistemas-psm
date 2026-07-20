@@ -112,6 +112,68 @@ def obtener_clientes():
     except Exception as e:
         logger.error(f"Error obteniendo clientes: {e}")
         return jsonify({"error": "Error interno del servidor"}), 500
+@clientes_bp.route('/api/clientes/<int:cliente_id>/expediente', methods=['GET'])
+@login_required
+def obtener_expediente_cliente(cliente_id):
+    """
+    Endpoint para obtener el Expediente Digital (Master Data) de un cliente:
+    Historial de pedidos, órdenes de trabajo, diagnósticos e informes técnicos.
+    """
+    session = Session()
+    try:
+        from database_models import OrdenTrabajo, Pedido, Archivo
+        cliente = session.query(Cliente).filter_by(id=cliente_id).first()
+        if not cliente:
+            return jsonify({"error": "Cliente no encontrado"}), 404
+            
+        ordenes = session.query(OrdenTrabajo).filter_by(cliente_id=cliente_id).order_by(OrdenTrabajo.fecha_creacion.desc()).all()
+        
+        historial_ordenes = []
+        for o in ordenes:
+            archivos = session.query(Archivo).filter_by(orden_id=o.id).all()
+            historial_ordenes.append({
+                "id": o.id,
+                "pedido_id": o.pedido_id,
+                "nombre_proyecto": o.nombre_proyecto,
+                "estado": o.estado.value if hasattr(o.estado, 'value') else str(o.estado),
+                "fecha_creacion": o.fecha_creacion.strftime('%Y-%m-%d %H:%M') if o.fecha_creacion else '',
+                "precio": round(float(o.precio_proporcional or 0.0), 2),
+                "abono": round(float(o.abono_proporcional or 0.0), 2),
+                "saldo_pendiente": round(float(o.saldo_pendiente_proporcional or 0.0), 2),
+                "tecnico": o.disenador.nombre if o.disenador else "Sin asignar",
+                "diagnostico": {
+                    "defectos": o.diagnostico_defectos or "",
+                    "detalles": o.diagnostico_detalles or "",
+                    "insumos": o.diagnostico_insumos or "",
+                    "observaciones": o.diagnostico_observaciones or "",
+                    "muestra": o.ruta_muestra or ""
+                },
+                "archivos": [
+                    {
+                        "id": a.id,
+                        "nombre_original": a.nombre_original,
+                        "tipo_categoria": a.tipo_categoria,
+                        "fecha_subida": a.fecha_subida.strftime('%Y-%m-%d %H:%M') if a.fecha_subida else ''
+                    } for a in archivos
+                ]
+            })
+            
+        return jsonify({
+            "cliente": {
+                "id": cliente.id,
+                "nombre_empresa": cliente.nombre_empresa,
+                "contacto_nombre": cliente.contacto_nombre,
+                "email": cliente.email,
+                "telefono": cliente.telefono,
+                "saldo_favor": round(float(cliente.saldo_favor or 0.0), 2),
+                "ruta_master_data": cliente.ruta_activos_permanentes or ""
+            },
+            "total_ordenes": len(historial_ordenes),
+            "ordenes": historial_ordenes
+        }), 200
+    except Exception as e:
+        logger.error(f"Error cargando expediente del cliente {cliente_id}: {e}")
+        return jsonify({"error": "Error al cargar expediente"}), 500
     finally:
         session.close()
 

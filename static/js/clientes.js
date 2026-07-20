@@ -7,7 +7,37 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('clientesModule', () => ({
         modalCrearAbierto: false,
         modalEditarAbierto: false,
+        modalExpedienteAbierto: false,
+        cargandoExpediente: false,
+        expedienteData: null,
         loading: false,
+        
+        async abrirExpediente(clienteId) {
+            this.modalExpedienteAbierto = true;
+            this.cargandoExpediente = true;
+            this.expedienteData = null;
+            try {
+                const res = await fetch(`/api/clientes/${clienteId}/expediente`);
+                const data = await res.json();
+                if (res.ok) {
+                    this.expedienteData = data;
+                } else {
+                    alert("Error al cargar expediente: " + (data.error || "Desconocido"));
+                    this.modalExpedienteAbierto = false;
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión al cargar expediente.");
+                this.modalExpedienteAbierto = false;
+            } finally {
+                this.cargandoExpediente = false;
+            }
+        },
+        
+        cerrarExpediente() {
+            this.modalExpedienteAbierto = false;
+            this.expedienteData = null;
+        },
         
         nuevoCliente: {
             nombre_empresa: '',
@@ -136,13 +166,24 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
             
+            // 1. Copiar ruta al portapapeles
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(ruta).catch(() => {});
             }
             
-            const utf8Ruta = unescape(encodeURIComponent(ruta));
-            const rutaCodificada = btoa(utf8Ruta);
-            window.location.href = `taskcore://${rutaCodificada}?server=${window.location.hostname}`;
+            const esNube = window.location.hostname.includes('onrender.com') || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('supabase');
+            
+            if (esNube) {
+                alert(`📁 Ruta Master Data del Cliente:\n\n${ruta}\n\n(La ruta ha sido copiada al portapapeles. La apertura directa de carpetas 'taskcore://' está diseñada para el servidor en red local LAN).`);
+            } else {
+                try {
+                    const utf8Ruta = unescape(encodeURIComponent(ruta));
+                    const rutaCodificada = btoa(utf8Ruta);
+                    window.location.href = `taskcore://${rutaCodificada}?server=${window.location.hostname}`;
+                } catch (e) {
+                    alert(`Ruta Master Data: ${ruta} (Copiada al portapapeles)`);
+                }
+            }
         }
     }));
 });

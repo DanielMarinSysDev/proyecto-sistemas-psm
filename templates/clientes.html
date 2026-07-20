@@ -8,8 +8,8 @@
     <!-- Encabezado y Acciones Principal -->
     <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-slate-100 tracking-tight">Directorio de Clientes</h1>
-            <p class="text-slate-400 mt-1 text-sm">Gestión de empresas, saldo a favor y repositorios de Master Data</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Directorio de Clientes</h1>
+            <p class="text-slate-600 dark:text-slate-400 mt-1 text-sm font-medium">Gestión de empresas, saldo a favor y expedientes de Master Data</p>
         </div>
         
         {% if session.get('usuario_rol') in ['Administrador', 'Gerencia', 'Recepción / Soporte', 'Ventas'] %}
@@ -31,7 +31,7 @@
                         <th class="py-3.5 px-4">Email</th>
                         <th class="py-3.5 px-4">Teléfono</th>
                         <th class="py-3.5 px-4">Saldo a Favor</th>
-                        <th class="py-3.5 px-4 text-right">Acciones / Master Data</th>
+                        <th class="py-3.5 px-4 text-right">Master Data & Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/80 text-sm">
@@ -59,18 +59,18 @@
                         </td>
                         <td class="py-3.5 px-4 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                <!-- Botón Abrir Carpeta Master Data -->
-                                <button @click="abrirCarpetaEnServidor('{{ cliente.ruta_activos_permanentes | replace('\\', '\\\\') }}')" 
-                                        class="inline-flex items-center gap-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700 px-3 py-1.5 rounded-lg transition-all shadow-sm" 
-                                        title="Abrir Carpeta Master Data en Servidor">
-                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                <!-- Botón Abrir Expediente Digital (Master Data) -->
+                                <button @click="abrirExpediente({{ cliente.id }})" 
+                                        class="inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 px-3 py-1.5 rounded-lg transition-all shadow-sm" 
+                                        title="Ver Expediente Completo de Master Data (Órdenes, Informes y Archivos)">
+                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                     <span>Master Data</span>
                                 </button>
                                 
                                 {% if session.get('usuario_rol') in ['Administrador', 'Gerencia', 'Recepción / Soporte', 'Ventas'] %}
                                 <!-- Botón Editar Cliente -->
                                 <button @click="abrirModalEditar({ id: {{ cliente.id }}, nombre_empresa: '{{ cliente.nombre_empresa | replace("'", "\\'") }}', contacto_nombre: '{{ cliente.contacto_nombre | replace("'", "\\'") }}', email: '{{ cliente.email | replace("'", "\\'") }}', telefono: '{{ cliente.telefono | replace("'", "\\'") }}' })" 
-                                        class="p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 transition-all" 
+                                        class="p-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 transition-all" 
                                         title="Editar Cliente">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                 </button>
@@ -98,6 +98,157 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+    
+    <!-- Modal Expediente Digital / Master Data Completo -->
+    <div x-show="modalExpedienteAbierto" x-cloak style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="cerrarExpediente()"></div>
+        <div class="relative bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in">
+            
+            <!-- Header del Modal Expediente -->
+            <div class="p-6 border-b border-slate-800 bg-slate-900/90 flex justify-between items-start">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg uppercase">
+                        <span x-text="expedienteData ? expedienteData.cliente.nombre_empresa.substring(0, 2) : 'CL'"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xl font-bold text-slate-100" x-text="expedienteData ? expedienteData.cliente.nombre_empresa : 'Cargando...'"></h3>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-950 text-blue-400 border border-blue-800" x-text="expedienteData ? expedienteData.total_ordenes + ' Órdenes' : ''"></span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5" x-text="expedienteData ? 'Contacto: ' + (expedienteData.cliente.contacto_nombre || 'N/A') + ' | Email: ' + (expedienteData.cliente.email || 'N/A') + ' | Tel: ' + (expedienteData.cliente.telefono || 'N/A') : ''"></p>
+                    </div>
+                </div>
+                <button @click="cerrarExpediente()" class="text-slate-400 hover:text-slate-200 transition-colors p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Cuerpo del Modal Expediente -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+                
+                <template x-if="cargandoExpediente">
+                    <div class="py-16 text-center text-slate-400 space-y-3">
+                        <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <p class="text-sm font-medium">Cargando expediente completo de Master Data...</p>
+                    </div>
+                </template>
+                
+                <template x-if="!cargandoExpediente && expedienteData">
+                    <div class="space-y-6">
+                        
+                        <!-- Barra de Resumen Financiero y Ruta Local -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-800/60 border border-slate-700/60 p-4 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs text-slate-400 font-semibold block uppercase tracking-wider">Saldo a Favor Actual</span>
+                                    <span class="text-lg font-bold text-emerald-400" x-text="'$' + expedienteData.cliente.saldo_favor.toFixed(2) + ' USD'"></span>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-800/60 border border-slate-700/60 p-4 rounded-xl flex items-center justify-between">
+                                <div class="truncate mr-2">
+                                    <span class="text-xs text-slate-400 font-semibold block uppercase tracking-wider">Ruta Master Data en Servidor</span>
+                                    <span class="text-xs font-mono text-slate-300 truncate block mt-1" x-text="expedienteData.cliente.ruta_master_data || 'Sin ruta asignada'"></span>
+                                </div>
+                                <button @click="abrirCarpetaEnServidor(expedienteData.cliente.ruta_master_data)" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-blue-300 text-xs font-semibold rounded-lg border border-slate-600 shrink-0 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    <span>Copiar Ruta</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista del Historial de Órdenes y Trabajos -->
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                Historial Completo de Órdenes e Informes Técnicos
+                            </h4>
+                            
+                            <template x-if="expedienteData.ordenes.length === 0">
+                                <div class="p-8 text-center bg-slate-800/30 rounded-xl border border-slate-800 text-slate-500 text-sm">
+                                    Este cliente aún no registra órdenes de trabajo o servicios en el sistema.
+                                </div>
+                            </template>
+                            
+                            <div class="space-y-4">
+                                <template x-for="orden in expedienteData.ordenes" :key="orden.id">
+                                    <div class="bg-slate-800/70 border border-slate-700/70 rounded-xl p-4 space-y-3">
+                                        
+                                        <!-- Cabecera de la Orden -->
+                                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-0.5 rounded bg-blue-600/80 text-white font-mono text-xs font-bold" x-text="'PEDIDO #' + orden.pedido_id"></span>
+                                                <span class="px-2 py-0.5 rounded bg-slate-900 text-slate-300 font-mono text-xs" x-text="'ART-' + orden.id"></span>
+                                                <h5 class="text-slate-100 font-bold text-base" x-text="orden.nombre_proyecto"></h5>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-slate-400 font-medium" x-text="orden.fecha_creacion"></span>
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-900 border border-slate-700 text-blue-300" x-text="orden.estado"></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Detalles Financieros y Técnico -->
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-900/40 p-2.5 rounded-lg border border-slate-800">
+                                            <div>
+                                                <span class="text-slate-400 block">Técnico Asignado:</span>
+                                                <span class="font-medium text-slate-200" x-text="orden.tecnico"></span>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-400 block">Precio Total:</span>
+                                                <span class="font-bold text-slate-100" x-text="'$' + orden.precio.toFixed(2)"></span>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-400 block">Abonado:</span>
+                                                <span class="font-bold text-emerald-400" x-text="'$' + orden.abono.toFixed(2)"></span>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-400 block">Saldo Pendiente:</span>
+                                                <span class="font-bold" :class="orden.saldo_pendiente > 0 ? 'text-amber-400' : 'text-slate-400'" x-text="'$' + orden.saldo_pendiente.toFixed(2)"></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Informe Técnico / Diagnóstico -->
+                                        <template x-if="orden.diagnostico.defectos || orden.diagnostico.detalles || orden.diagnostico.insumos || orden.diagnostico.observaciones">
+                                            <div class="p-3 bg-slate-900/80 rounded-lg border border-slate-750 text-xs space-y-1.5">
+                                                <span class="font-bold text-blue-400 block uppercase text-[10px] tracking-wider">📋 Informe Técnico & Diagnóstico</span>
+                                                <div x-show="orden.diagnostico.defectos" class="text-slate-300"><strong class="text-slate-400">Fallas reportadas:</strong> <span x-text="orden.diagnostico.defectos"></span></div>
+                                                <div x-show="orden.diagnostico.detalles" class="text-slate-300"><strong class="text-slate-400">Detalles:</strong> <span x-text="orden.diagnostico.detalles"></span></div>
+                                                <div x-show="orden.diagnostico.insumos" class="text-slate-300"><strong class="text-slate-400">Insumos/Respuestos:</strong> <span x-text="orden.diagnostico.insumos"></span></div>
+                                                <div x-show="orden.diagnostico.observaciones" class="text-slate-300"><strong class="text-slate-400">Observaciones:</strong> <span x-text="orden.diagnostico.observaciones"></span></div>
+                                            </div>
+                                        </template>
+                                        
+                                        <!-- Archivos Adjuntos -->
+                                        <template x-if="orden.archivos && orden.archivos.length > 0">
+                                            <div class="pt-1">
+                                                <span class="text-[11px] font-semibold text-slate-400 block mb-1.5">Archivos Adjuntos (Master Data):</span>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <template x-for="arc in orden.archivos" :key="arc.id">
+                                                        <span class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-blue-300 flex items-center gap-1.5">
+                                                            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                                            <span x-text="arc.nombre_original"></span>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </template>
+            </div>
+            
+            <div class="p-4 border-t border-slate-800 bg-slate-900/90 flex justify-end">
+                <button @click="cerrarExpediente()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition-colors">Cerrar Expediente</button>
+            </div>
         </div>
     </div>
     
