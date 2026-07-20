@@ -9,7 +9,7 @@ document.addEventListener('alpine:init', () => {
         disenadoresList: initialDisenadores || [],
         currentUserId: parseInt(currentUserId) || null,
         filtroMisTareas: false,
-        vistaCompacta: false,
+        vistaCompacta: true,
         incidenciaModalOpen: false,
         incidenciaOrderId: null,
         incidenciaTipo: 'Falta Material',
