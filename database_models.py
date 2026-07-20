@@ -317,13 +317,14 @@ def init_db():
         print(f"Aviso al agregar columna es_adicional (probablemente ya existe): {ex}")
         
     # Parchear columnas de diagnóstico en ordenes_trabajo si no existen
-    for col_name in ["diagnostico_defectos", "diagnostico_detalles", "diagnostico_insumos", "diagnostico_observaciones"]:
+    for col_name in ["diagnostico_defectos", "diagnostico_detalles", "diagnostico_insumos", "diagnostico_observaciones", "precio_unitario"]:
         try:
             with engine.begin() as conn:
+                tipo_col = "FLOAT" if col_name == "precio_unitario" else "TEXT"
                 if "postgresql" in str(engine.url):
-                    conn.execute(text(f"ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS {col_name} TEXT"))
+                    conn.execute(text(f"ALTER TABLE ordenes_trabajo ADD COLUMN IF NOT EXISTS {col_name} {tipo_col}"))
                 else:
-                    conn.execute(text(f"ALTER TABLE ordenes_trabajo ADD COLUMN {col_name} TEXT"))
+                    conn.execute(text(f"ALTER TABLE ordenes_trabajo ADD COLUMN {col_name} {tipo_col}"))
             print(f"Columna {col_name} agregada o verificada exitosamente.")
         except Exception as ex:
             print(f"Aviso al agregar columna {col_name} (probablemente ya existe): {ex}")
