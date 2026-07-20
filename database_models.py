@@ -316,6 +316,17 @@ def init_db():
     except Exception as ex:
         print(f"Aviso al agregar columna es_adicional (probablemente ya existe): {ex}")
         
+    # Parchear columna saldo_favor en clientes si no existe
+    try:
+        with engine.begin() as conn:
+            if "postgresql" in str(engine.url):
+                conn.execute(text("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS saldo_favor FLOAT DEFAULT 0.0"))
+            else:
+                conn.execute(text("ALTER TABLE clientes ADD COLUMN saldo_favor FLOAT DEFAULT 0.0"))
+        print("Columna saldo_favor en clientes agregada o verificada exitosamente.")
+    except Exception as ex:
+        print(f"Aviso al agregar columna saldo_favor en clientes: {ex}")
+
     # Parchear columnas de diagnóstico en ordenes_trabajo si no existen
     for col_name in ["diagnostico_defectos", "diagnostico_detalles", "diagnostico_insumos", "diagnostico_observaciones", "precio_unitario"]:
         try:
