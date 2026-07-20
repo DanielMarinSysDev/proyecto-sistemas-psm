@@ -153,7 +153,10 @@ def obtener_expediente_cliente(cliente_id):
                         "id": a.id,
                         "nombre_original": a.nombre_original,
                         "tipo_categoria": a.tipo_categoria,
-                        "fecha_subida": a.fecha_subida.strftime('%Y-%m-%d %H:%M') if a.fecha_subida else ''
+                        "fecha_subida": a.fecha_subida.strftime('%Y-%m-%d %H:%M') if a.fecha_subida else '',
+                        "tipo": 'image' if any(a.nombre_original.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp']) else ('pdf' if a.nombre_original.lower().endswith('.pdf') else 'other'),
+                        "url_descarga": f"/api/ordenes/{o.id}/descargar-archivo/{a.nombre_original}",
+                        "url_preview": f"/api/ordenes/{o.id}/preview/{a.nombre_original}"
                     } for a in archivos
                 ]
             })
