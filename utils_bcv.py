@@ -19,6 +19,7 @@ def get_tasa_bcv():
     try:
         # Intentar leer los valores guardados en la BD
         tasa_config = session.query(Configuracion).filter_by(clave='bcv_tasa').first()
+        tasa_eur_config = session.query(Configuracion).filter_by(clave='bcv_tasa_eur').first()
         fecha_config = session.query(Configuracion).filter_by(clave='bcv_fecha').first()
         
         # Si ya se consultó hoy, retornar la tasa guardada para evitar cambios a mitad del día (ej. a las 4:30pm)
@@ -30,6 +31,7 @@ def get_tasa_bcv():
                 
         # Si no hay tasa o es un nuevo día, intentamos obtenerla de la web de BCV
         tasa_obtenida = None
+        tasa_eur_obtenida = None
         try:
             # Petición a BCV. Usamos verify=False por problemas frecuentes en sus certificados SSL
             headers = {
@@ -47,10 +49,17 @@ def get_tasa_bcv():
                 # La página usa coma para decimales. Convertirlo a formato float válido
                 valor_str = valor_str.replace('.', '').replace(',', '.')
                 tasa_obtenida = float(valor_str)
+                
+            # Buscar el div con id "euro" y dentro el texto del strong
+            euro_div = soup.find('div', id='euro')
+            if euro_div:
+                valor_eur_str = euro_div.find('strong').text.strip()
+                valor_eur_str = valor_eur_str.replace('.', '').replace(',', '.')
+                tasa_eur_obtenida = float(valor_eur_str)
         except Exception as ex:
             print(f"Error raspando BCV de forma directa: {ex}")
             
-        # Si pudimos obtener la nueva tasa, actualizamos la base de datos
+        # Si pudimos obtener la nueva tasa de dólar, actualizamos la base de datos
         if tasa_obtenida is not None:
             if not tasa_config:
                 tasa_config = Configuracion(clave='bcv_tasa', valor=str(tasa_obtenida))
@@ -58,6 +67,13 @@ def get_tasa_bcv():
             else:
                 tasa_config.valor = str(tasa_obtenida)
                 
+            if tasa_eur_obtenida is not None:
+                if not tasa_eur_config:
+                    tasa_eur_config = Configuracion(clave='bcv_tasa_eur', valor=str(tasa_eur_obtenida))
+                    session.add(tasa_eur_config)
+                else:
+                    tasa_eur_config.valor = str(tasa_eur_obtenida)
+                    
             if not fecha_config:
                 fecha_config = Configuracion(clave='bcv_fecha', valor=hoy_str)
                 session.add(fecha_config)
@@ -83,4 +99,34 @@ def get_tasa_bcv():
         session.close()
         
     return None
-#Prueba para hacer push a repo
+
+def get_tasa_eur_bcv():
+    ahora = datetime.now()
+    hoy_str = ahora.strftime("%Y-%m-%d")
+    
+    session = Session()
+    try:
+        tasa_eur_config = session.query(Configuracion).filter_by(clave='bcv_tasa_eur').first()
+        fecha_config = session.query(Configuracion).filter_by(clave='bcv_fecha').first()
+        
+        # Si ya se consultó hoy y existe, retornamos el valor guardado
+        if tasa_eur_config and fecha_config and fecha_config.valor == hoy_str:
+            try:
+                return float(tasa_eur_config.valor)
+            except ValueError:
+                pass
+                
+        # Forzar ejecución de get_tasa_bcv para actualizar ambas tasas
+        get_tasa_bcv()
+        
+        # Re-consultar el valor actualizado de Euro
+        tasa_eur_config = session.query(Configuracion).filter_by(clave='bcv_tasa_eur').first()
+        if tasa_eur_config:
+            return float(tasa_eur_config.valor)
+            
+    except Exception as e:
+        print(f"Error general en get_tasa_eur_bcv: {e}")
+    finally:
+        session.close()
+        
+    return None

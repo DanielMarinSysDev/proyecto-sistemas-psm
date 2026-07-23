@@ -64,6 +64,7 @@ document.addEventListener('alpine:init', () => {
             monto_total: '',
             moneda: 'USD',
             tasa_bcv: '',
+            tasa_eur_bcv: '',
             estado_pago: 'Por Cancelar',
             monto_abono: '',
             metodo_pago: '',
@@ -232,6 +233,9 @@ document.addEventListener('alpine:init', () => {
                     if(data.tasa) {
                         this.ordenForm.tasa_bcv = data.tasa;
                     }
+                    if(data.tasa_eur) {
+                        this.ordenForm.tasa_eur_bcv = data.tasa_eur;
+                    }
                 }
             } catch(e) {
                 console.error("Error al obtener la tasa del BCV", e);
@@ -330,6 +334,7 @@ document.addEventListener('alpine:init', () => {
                         monto_total: this.ordenForm.monto_total ? parseFloat(this.ordenForm.monto_total) : null,
                         moneda: this.ordenForm.moneda,
                         tasa_bcv: this.ordenForm.tasa_bcv ? parseFloat(this.ordenForm.tasa_bcv) : null,
+                        tasa_eur_bcv: this.ordenForm.tasa_eur_bcv ? parseFloat(this.ordenForm.tasa_eur_bcv) : null,
                         estado_pago: this.ordenForm.estado_pago,
                         monto_abono: this.ordenForm.estado_pago === 'Abono' 
                             ? (this.ordenForm.notas_pago ? `${this.ordenForm.monto_abono} (${this.ordenForm.notas_pago})` : this.ordenForm.monto_abono) 
@@ -357,7 +362,7 @@ document.addEventListener('alpine:init', () => {
                         this.showSuccessModal = true;
                     }
                     this.ordenRuta = data.ruta_archivos;
-                    this.ordenForm = { cliente_id: '', referencia: '', monto_total: '', moneda: 'USD', tasa_bcv: '', estado_pago: 'Por Cancelar', monto_abono: '', metodo_pago: '', notas_pago: '', usar_saldo_favor: false, ocultar_precio_ventas: false, motivo_sin_costo: '', articulos: [ {tipo_trabajo: '', material: '', cantidad: 1, specs: '', enlace_recursos: '', disenador_id: '', precio_estimado: 0.0, requiere_cotizacion_especial: false} ] };
+                    this.ordenForm = { cliente_id: '', referencia: '', monto_total: '', moneda: 'USD', tasa_bcv: '', tasa_eur_bcv: '', estado_pago: 'Por Cancelar', monto_abono: '', metodo_pago: '', notas_pago: '', usar_saldo_favor: false, ocultar_precio_ventas: false, motivo_sin_costo: '', articulos: [ {tipo_trabajo: '', material: '', cantidad: 1, specs: '', enlace_recursos: '', disenador_id: '', precio_estimado: 0.0, requiere_cotizacion_especial: false} ] };
                     this.currentStep = 1;
                 } else {
                     this.ordenError = true;

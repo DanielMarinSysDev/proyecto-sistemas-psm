@@ -145,17 +145,22 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Moneda de Pago</label>
                         <select x-model="confirmForm.moneda" @change="actualizarTasaBCV()" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500">
                             <option value="USD">Dólares ($)</option>
                             <option value="VES">Bolívares (Bs)</option>
+                            <option value="EUR">Euros (€)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tasa Cambio BCV</label>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tasa Cambio USD</label>
                         <input type="number" step="0.01" x-model="confirmForm.tasa_bcv" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tasa Cambio EUR</label>
+                        <input type="number" step="0.01" x-model="confirmForm.tasa_eur_bcv" class="block w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
 
@@ -193,6 +198,7 @@
                             <option value="Transferencia">Transferencia</option>
                             <option value="Efectivo Bs">Efectivo Bs</option>
                             <option value="Efectivo $">Efectivo $</option>
+                            <option value="Efectivo €">Efectivo €</option>
                             <option value="Zelle">Zelle</option>
                             <option value="Otro">Otro</option>
                         </select>
@@ -271,6 +277,7 @@ function borradoresAdmin() {
         guardando: false,
         toast: { show: false, message: '', type: 'success' },
         tasa_bcv_actual: 0.0,
+        tasa_eur_actual: 0.0,
         
         showToast(msg, type = 'success') {
             this.toast.message = msg;
@@ -287,6 +294,7 @@ function borradoresAdmin() {
             monto_total: 0.0,
             moneda: 'USD',
             tasa_bcv: 0.0,
+            tasa_eur_bcv: 0.0,
             metodo_pago: '',
             notas_pago: '',
             usar_saldo_favor: false,
@@ -314,6 +322,9 @@ function borradoresAdmin() {
                     const data = await res.json();
                     if (data.tasa) {
                         this.tasa_bcv_actual = parseFloat(data.tasa);
+                    }
+                    if (data.tasa_eur) {
+                        this.tasa_eur_actual = parseFloat(data.tasa_eur);
                     }
                 }
             } catch (err) {
@@ -361,6 +372,10 @@ function borradoresAdmin() {
                 if (!this.confirmForm.tasa_bcv || this.confirmForm.tasa_bcv === 0.0) {
                     this.confirmForm.tasa_bcv = this.tasa_bcv_actual;
                 }
+            } else if (this.confirmForm.moneda === 'EUR') {
+                if (!this.confirmForm.tasa_eur_bcv || this.confirmForm.tasa_eur_bcv === 0.0) {
+                    this.confirmForm.tasa_eur_bcv = this.tasa_eur_actual;
+                }
             }
         },
         
@@ -380,6 +395,7 @@ function borradoresAdmin() {
             this.confirmForm.estado_pago = 'Por Cancelar';
             this.confirmForm.moneda = 'USD';
             this.confirmForm.tasa_bcv = this.tasa_bcv_actual;
+            this.confirmForm.tasa_eur_bcv = this.tasa_eur_actual;
             this.confirmForm.disenador_id = '';
             this.confirmForm.metodo_pago = '';
             this.confirmForm.notas_pago = '';
@@ -395,6 +411,8 @@ function borradoresAdmin() {
             this.guardando = true;
             const payload = {
                 ...this.confirmForm,
+                tasa_bcv: this.confirmForm.tasa_bcv ? parseFloat(this.confirmForm.tasa_bcv) : null,
+                tasa_eur_bcv: this.confirmForm.tasa_eur_bcv ? parseFloat(this.confirmForm.tasa_eur_bcv) : null,
                 monto_abono: this.confirmForm.estado_pago === 'Abono' 
                     ? (this.confirmForm.notas_pago ? `${this.confirmForm.monto_abono} (${this.confirmForm.notas_pago})` : this.confirmForm.monto_abono) 
                     : (this.confirmForm.estado_pago === 'Cancelado' ? `Cancelado (${this.confirmForm.notas_pago || 'Pago completo'})` : '0'),

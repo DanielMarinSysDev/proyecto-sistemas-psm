@@ -108,8 +108,19 @@
             
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-[var(--slate-950)]/40 p-4 rounded-xl border border-[var(--slate-300)]">
                 <div>
-                    <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Total a Pagar</span>
+                    <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Total en USD</span>
                     <span class="text-lg font-bold">${{ "%.2f"|format(pedido.monto_total or 0.0) }} USD</span>
+                </div>
+
+                <div>
+                    <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Total en Bs.</span>
+                    {% if pedido.tasa_bcv %}
+                    <span class="text-lg font-bold text-[var(--brand-blue)]">Bs. {{ "%.2f"|format((pedido.monto_total or 0.0) * pedido.tasa_bcv) }}</span>
+                    <span class="block text-[10px] text-[var(--slate-400)] mt-0.5">(Tasa BCV: {{ "%.2f"|format(pedido.tasa_bcv) }} Bs/$)</span>
+                    {% else %}
+                    <span class="text-lg font-bold text-[var(--slate-400)]">N/A</span>
+                    <span class="block text-[10px] text-[var(--slate-400)] mt-0.5">(Tasa no registrada)</span>
+                    {% endif %}
                 </div>
                 
                 <div>
@@ -129,7 +140,7 @@
                     {% endif %}
                 </div>
                 
-                <div class="col-span-2 sm:col-span-1">
+                <div class="col-span-2 sm:col-span-3 border-t border-[var(--slate-800)] pt-3 mt-1">
                     <span class="block text-xs text-[var(--slate-400)] uppercase font-semibold">Detalles / Historial</span>
                     <p class="text-xs text-[var(--slate-400)] mt-1 leading-relaxed">{{ pedido.monto_abono or 'Pendiente de pago.' }}</p>
                 </div>

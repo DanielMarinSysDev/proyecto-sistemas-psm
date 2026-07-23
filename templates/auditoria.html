@@ -195,45 +195,98 @@
     </div>
 
     <!-- Barra de Filtros -->
-    <div class="glass border border-slate-800 rounded-xl p-5 mb-8">
-        <form method="GET" action="/auditoria" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <!-- Búsqueda por texto -->
-            <div class="space-y-1">
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Buscar Acción / Detalles</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </span>
-                    <input type="text" name="q" value="{{ current_query or '' }}" placeholder="Ej: Cambio de Estado, Orden #..." class="w-full bg-slate-950/80 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+    <div class="glass border border-slate-800 rounded-xl p-5 mb-8" x-data="{ tipoFiltro: '{{ current_tipo_filtro or 'todo' }}' }">
+        <form method="GET" action="/auditoria" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <!-- Búsqueda por texto -->
+                <div class="md:col-span-2 space-y-1">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Buscar Acción / Detalles</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </span>
+                        <input type="text" name="q" value="{{ current_query or '' }}" placeholder="Ej: Cambio de Estado, Orden #..." class="w-full bg-slate-950/80 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Filtrar por Usuario -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Usuario / Operador</label>
+                    <select name="usuario_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+                        <option value="">Todos los usuarios</option>
+                        {% for u in usuarios %}
+                        <option value="{{ u.id }}" {% if current_usuario_id == u.id %}selected{% endif %}>{{ u.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Periodo / Rango de Tiempo -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Periodo / Rango</label>
+                    <select name="tipo_filtro" x-model="tipoFiltro" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+                        <option value="todo">Todo el tiempo</option>
+                        <option value="hoy">Hoy</option>
+                        <option value="ayer">Ayer</option>
+                        <option value="7dias">Últimos 7 días</option>
+                        <option value="30dias">Últimos 30 días</option>
+                        <option value="dia">Día específico</option>
+                        <option value="rango">Rango de fechas</option>
+                        <option value="mes">Mes específico</option>
+                        <option value="anio">Año específico</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Filtrar por Usuario -->
-            <div class="space-y-1">
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Usuario / Operador</label>
-                <select name="usuario_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                    <option value="">Todos los usuarios</option>
-                    {% for u in usuarios %}
-                    <option value="{{ u.id }}" {% if current_usuario_id == u.id %}selected{% endif %}>{{ u.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <!-- Inputs Condicionales para Fecha -->
+            <div x-show="tipoFiltro !== 'todo' && tipoFiltro !== 'hoy' && tipoFiltro !== 'ayer' && tipoFiltro !== '7dias' && tipoFiltro !== '30dias'" 
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 transform -translate-y-2"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-slate-950/40 p-4 rounded-xl border border-slate-800/60"
+                 style="display: none;">
+                 
+                <!-- Día Específico -->
+                <div class="space-y-1 md:col-span-2" x-show="tipoFiltro === 'dia'">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Seleccionar Día</label>
+                    <input type="date" name="dia" value="{{ current_dia or '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
 
-            <!-- Filtrar por Día -->
-            <div class="space-y-1">
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Fecha / Día</label>
-                <input type="date" name="fecha" value="{{ current_fecha or '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <!-- Rango de Fechas -->
+                <div class="space-y-1 md:col-span-2" x-show="tipoFiltro === 'rango'">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Entre Fechas</label>
+                    <div class="flex items-center gap-2">
+                        <input type="date" name="inicio" value="{{ current_inicio or '' }}" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Inicio">
+                        <span class="text-slate-500 text-xs font-bold">y</span>
+                        <input type="date" name="fin" value="{{ current_fin or '' }}" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Fin">
+                    </div>
+                </div>
+
+                <!-- Mes Específico -->
+                <div class="space-y-1" x-show="tipoFiltro === 'mes'">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Seleccionar Mes</label>
+                    <select name="mes" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        {% set meses = [('1', 'Enero'), ('2', 'Febrero'), ('3', 'Marzo'), ('4', 'Abril'), ('5', 'Mayo'), ('6', 'Junio'), ('7', 'Julio'), ('8', 'Agosto'), ('9', 'Septiembre'), ('10', 'Octubre'), ('11', 'Noviembre'), ('12', 'Diciembre')] %}
+                        {% for val, name in meses %}
+                        <option value="{{ val }}" {% if current_mes == val %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Año (para Mes o Año) -->
+                <div class="space-y-1" x-show="tipoFiltro === 'mes' || tipoFiltro === 'anio'">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Seleccionar Año</label>
+                    <input type="number" name="anio" value="{{ current_anio or '2026' }}" min="2020" max="2035" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
             </div>
 
             <!-- Botones de Acción -->
-            <div class="flex gap-2">
-                <button type="submit" class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all active:scale-95 shadow-md shadow-blue-500/10">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                    Filtrar
-                </button>
-                <a href="/auditoria" class="inline-flex items-center justify-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 text-sm font-medium rounded-lg transition-all">
-                    Limpiar
+            <div class="flex justify-end gap-3 pt-2">
+                <a href="/auditoria" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 text-sm font-semibold rounded-lg transition-all active:scale-95 border border-slate-700">
+                    Limpiar Filtros
                 </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all active:scale-95 shadow-md shadow-blue-500/20">
+                    Aplicar Filtros
+                </button>
             </div>
         </form>
     </div>

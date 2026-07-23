@@ -37,6 +37,7 @@
         <!-- Columna de Acciones -->
         <div class="flex flex-col gap-6">
             <!-- Panel de Acciones Rápidas -->
+            <!-- Panel de Nuevo Respaldo -->
             <div class="glass border border-slate-800 rounded-xl p-6 flex flex-col justify-between h-fit">
                 <div>
                     <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center">
@@ -45,8 +46,28 @@
                         </svg>
                         Nuevo Respaldo
                     </h2>
-                    <p class="text-sm text-slate-400 mb-6">
-                        Genera una copia de seguridad en formato SQL de toda la información actual del sistema: usuarios, clientes, pedidos, órdenes de trabajo y configuraciones generales. El archivo se almacenará de manera segura en el servidor.
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Destino del Respaldo</label>
+                        <select x-model="destinoRespaldo" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            {% if usa_supabase %}
+                            <option value="supabase">Nube (Supabase Storage)</option>
+                            {% endif %}
+                            <option value="local">Servidor Local (LAN / Render)</option>
+                            <option value="descargar">Descargar Directamente a mi PC (.sql)</option>
+                        </select>
+                    </div>
+
+                    <p class="text-sm text-slate-400 mb-6 min-h-[60px]">
+                        <template x-if="destinoRespaldo === 'supabase'">
+                            <span>Genera una copia de seguridad en formato SQL y la guarda de forma persistente en <strong>Supabase Storage</strong> para evitar pérdidas debidas al reinicio del servidor.</span>
+                        </template>
+                        <template x-if="destinoRespaldo === 'local'">
+                            <span>Genera una copia de seguridad en formato SQL de toda la información y la almacena de manera segura en el almacenamiento local del servidor.</span>
+                        </template>
+                        <template x-if="destinoRespaldo === 'descargar'">
+                            <span>Genera una copia de seguridad en formato SQL de la base de datos y la descarga directamente a su ordenador sin ocupar almacenamiento permanente.</span>
+                        </template>
                     </p>
                 </div>
                 
@@ -55,7 +76,7 @@
                     <svg x-show="!loading" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                     </svg>
-                    <svg x-show="loading" class="animate-spin h-5.w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
+                    <svg x-show="loading" class="animate-spin h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" style="display: none;">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -89,12 +110,22 @@
 
         <!-- Tabla/Lista de Respaldos Existentes -->
         <div class="lg:col-span-2 glass border border-slate-800 rounded-xl p-6">
-            <h2 class="text-xl font-bold text-slate-100 mb-6 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Historial de Respaldos Disponibles
-            </h2>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h2 class="text-xl font-bold text-slate-100 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Historial de Respaldos Disponibles
+                </h2>
+                <div class="flex gap-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20 w-fit">
+                        ☁️ Nube (Supabase)
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 w-fit">
+                        📁 Local (LAN)
+                    </span>
+                </div>
+            </div>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-800">
@@ -110,18 +141,29 @@
                         {% if respaldos %}
                             {% for r in respaldos %}
                                 <tr class="hover:bg-slate-900/40 transition-colors">
-                                    <td class="px-4 py-4 text-sm font-medium text-slate-200 font-mono">{{ r.nombre }}</td>
+                                    <td class="px-4 py-4 text-sm font-medium text-slate-200 font-mono flex items-center gap-2">
+                                        {{ r.nombre }}
+                                        {% if r.origen == 'supabase' %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                            Nube
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                            Local
+                                        </span>
+                                        {% endif %}
+                                    </td>
                                     <td class="px-4 py-4 text-sm text-slate-400">{{ r.fecha }}</td>
                                     <td class="px-4 py-4 text-sm text-slate-400">{{ r.tamano }}</td>
                                     <td class="px-4 py-4 text-right text-sm flex justify-end gap-2">
-                                        <button @click="confirmarDescargar('{{ r.nombre }}')"
+                                        <button @click="confirmarDescargar('{{ r.nombre }}', '{{ r.origen }}')"
                                                 class="inline-flex items-center px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/30 hover:border-blue-500/50 text-blue-300 text-xs font-semibold rounded-lg transition-all active:scale-95">
                                             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                             </svg>
                                             Descargar
                                         </button>
-                                        <button @click="confirmarRestaurar('{{ r.nombre }}')"
+                                        <button @click="confirmarRestaurar('{{ r.nombre }}', '{{ r.origen }}')"
                                                 class="inline-flex items-center px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/35 border border-amber-500/30 hover:border-amber-500/50 text-amber-300 text-xs font-semibold rounded-lg transition-all active:scale-95">
                                             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3z"></path>
@@ -232,6 +274,7 @@
 function mantenimientoApp() {
     return {
         loading: false,
+        destinoRespaldo: '{{ "supabase" if usa_supabase else "local" }}',
         alert: {
             show: false,
             type: 'success',
@@ -241,6 +284,7 @@ function mantenimientoApp() {
             show: false,
             actionType: '', // 'restaurar' | 'descargar' | 'subir_restaurar'
             filename: '',
+            origen: 'local',
             password: ''
         },
         showAlert(type, message) {
@@ -256,19 +300,50 @@ function mantenimientoApp() {
             this.loading = true;
             this.alert.show = false;
             try {
-                const response = await fetch('/api/mantenimiento/respaldar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    this.showAlert('success', data.mensaje);
-                    // Recargar la página después de 2 segundos para ver el nuevo respaldo
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                if (this.destinoRespaldo === 'descargar') {
+                    const response = await fetch('/api/mantenimiento/respaldar?destino=descargar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const disposition = response.headers.get('Content-Disposition');
+                        let filename = `respaldo_taskcore_${new Date().toISOString().slice(0,10)}.sql`;
+                        if (disposition && disposition.indexOf('attachment') !== -1) {
+                            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                            const matches = filenameRegex.exec(disposition);
+                            if (matches != null && matches[1]) { 
+                                filename = matches[1].replace(/['"]/g, '');
+                            }
+                        }
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        this.showAlert('success', 'Respaldo generado y descargado exitosamente.');
+                    } else {
+                        const data = await response.json();
+                        this.showAlert('error', data.error || 'Error al descargar el respaldo.');
+                    }
                 } else {
-                    this.showAlert('error', data.error || 'Error al crear el respaldo.');
+                    const response = await fetch('/api/mantenimiento/respaldar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ destino: this.destinoRespaldo })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        this.showAlert('success', data.mensaje);
+                        // Recargar la página después de 2 segundos para ver el nuevo respaldo
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        this.showAlert('error', data.error || 'Error al crear el respaldo.');
+                    }
                 }
             } catch (err) {
                 this.showAlert('error', 'Fallo en la comunicación con el servidor.');
@@ -276,21 +351,24 @@ function mantenimientoApp() {
                 this.loading = false;
             }
         },
-        confirmarRestaurar(filename) {
+        confirmarRestaurar(filename, origen) {
             this.modal.actionType = 'restaurar';
             this.modal.filename = filename;
+            this.modal.origen = origen;
             this.modal.password = '';
             this.modal.show = true;
         },
-        confirmarDescargar(filename) {
+        confirmarDescargar(filename, origen) {
             this.modal.actionType = 'descargar';
             this.modal.filename = filename;
+            this.modal.origen = origen;
             this.modal.password = '';
             this.modal.show = true;
         },
         abrirSubirRestaurar() {
             this.modal.actionType = 'subir_restaurar';
             this.modal.filename = '';
+            this.modal.origen = 'local';
             this.modal.password = '';
             this.modal.show = true;
             // Resetear input de archivo si existe
@@ -315,13 +393,14 @@ function mantenimientoApp() {
             this.loading = true;
             const filename = this.modal.filename;
             const password = this.modal.password;
+            const origen = this.modal.origen;
             this.modal.show = false;
             this.alert.show = false;
             try {
                 const response = await fetch('/api/mantenimiento/restaurar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: filename, password: password })
+                    body: JSON.stringify({ filename: filename, password: password, origen: origen })
                 });
                 const data = await response.json();
                 if (response.ok) {
@@ -339,13 +418,14 @@ function mantenimientoApp() {
             this.loading = true;
             const filename = this.modal.filename;
             const password = this.modal.password;
+            const origen = this.modal.origen;
             this.modal.show = false;
             this.alert.show = false;
             try {
                 const response = await fetch(`/api/mantenimiento/respaldos/${filename}/descargar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: password })
+                    body: JSON.stringify({ password: password, origen: origen })
                 });
                 if (response.ok) {
                     const blob = await response.blob();

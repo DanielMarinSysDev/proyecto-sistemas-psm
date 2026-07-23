@@ -158,7 +158,7 @@
                 </template>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-1">Referencia Secuencial</label>
                     <input x-model="ordenForm.referencia" type="text" readonly class="w-full bg-slate-900/80 border border-slate-700/50 rounded-lg px-4 py-2 text-slate-400 font-mono focus:outline-none cursor-not-allowed opacity-90 transition-all" placeholder="Generando...">
@@ -171,15 +171,18 @@
                         <select x-model="ordenForm.moneda" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                             <option value="USD">USD</option>
                             <option value="Bs">Bs</option>
+                            <option value="EUR">EUR</option>
                         </select>
                     </div>
                     <!-- Texto de conversión dinámica -->
-                    <p x-show="ordenForm.monto_total && ordenForm.tasa_bcv" class="text-sm font-medium text-slate-300 mt-1.5 pl-1" x-transition style="display: none;">
+                    <p x-show="ordenForm.monto_total && (ordenForm.moneda === 'Bs' ? ordenForm.tasa_bcv : (ordenForm.moneda === 'EUR' ? ordenForm.tasa_eur_bcv : ordenForm.tasa_bcv))" class="text-sm font-medium text-slate-300 mt-1.5 pl-1" x-transition style="display: none;">
                         Equivalente: 
                         <span class="font-bold text-emerald-400" x-text="
                              ordenForm.moneda === 'USD' 
                              ? 'Bs. ' + (parseFloat(ordenForm.monto_total) * parseFloat(ordenForm.tasa_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
-                             : '$ ' + (parseFloat(ordenForm.monto_total) / parseFloat(ordenForm.tasa_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+                             : (ordenForm.moneda === 'EUR'
+                                ? 'Bs. ' + (parseFloat(ordenForm.monto_total) * parseFloat(ordenForm.tasa_eur_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' | $ ' + ((parseFloat(ordenForm.monto_total) * parseFloat(ordenForm.tasa_eur_bcv)) / parseFloat(ordenForm.tasa_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+                                : '$ ' + (parseFloat(ordenForm.monto_total) / parseFloat(ordenForm.tasa_bcv)).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}))
                         "></span>
                     </p>
                     <!-- Campo justificativo obligatorio si el precio es 0 o vacío -->
@@ -190,8 +193,13 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Tasa BCV del Día</label>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Tasa BCV USD</label>
                     <input x-model="ordenForm.tasa_bcv" type="number" step="0.01" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: 36.50">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Tasa BCV EUR</label>
+                    <input x-model="ordenForm.tasa_eur_bcv" type="number" step="0.01" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Ej: 39.50">
                 </div>
             </div>
             
@@ -227,6 +235,7 @@
                         <option value="Transferencia">Transferencia</option>
                         <option value="Efectivo Bs">Efectivo Bs</option>
                         <option value="Efectivo $">Efectivo $</option>
+                        <option value="Efectivo €">Efectivo €</option>
                         <option value="Zelle">Zelle</option>
                         <option value="Otro">Otro</option>
                     </select>

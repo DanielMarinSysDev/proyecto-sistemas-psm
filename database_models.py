@@ -111,6 +111,7 @@ class Pedido(Base):
     monto_total = Column(Float, nullable=True)
     moneda = Column(String(10), default="USD")
     tasa_bcv = Column(Float, nullable=True)
+    tasa_eur_bcv = Column(Float, nullable=True)
     ocultar_precio_ventas = Column(Boolean, default=False, server_default="0")
     
     # Relaciones
@@ -326,6 +327,17 @@ def init_db():
         print("Columna saldo_favor en clientes agregada o verificada exitosamente.")
     except Exception as ex:
         print(f"Aviso al agregar columna saldo_favor en clientes: {ex}")
+
+    # Parchear columna tasa_eur_bcv en pedidos si no existe
+    try:
+        with engine.begin() as conn:
+            if "postgresql" in str(engine.url):
+                conn.execute(text("ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS tasa_eur_bcv FLOAT"))
+            else:
+                conn.execute(text("ALTER TABLE pedidos ADD COLUMN tasa_eur_bcv FLOAT"))
+        print("Columna tasa_eur_bcv en pedidos agregada o verificada exitosamente.")
+    except Exception as ex:
+        print(f"Aviso al agregar columna tasa_eur_bcv en pedidos: {ex}")
 
     # Parchear columnas de diagnóstico en ordenes_trabajo si no existen
     for col_name in ["diagnostico_defectos", "diagnostico_detalles", "diagnostico_insumos", "diagnostico_observaciones", "precio_unitario"]:

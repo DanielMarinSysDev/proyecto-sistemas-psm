@@ -1004,7 +1004,7 @@ class TestSistemaTaskCore(unittest.TestCase):
         content = b"CREATE TABLE test;\n"
         # Obtener el SECRET_KEY igual a como lo hace restaurar_db.py
         secret_key_val = os.getenv("SECRET_KEY", "dev_key_temporal_secreta_12345")
-        firma = hmac.new(secret_key_val.encode('utf-8'), content, hashlib.sha256).hexdigest()
+        firma = hmac.new(secret_key_val.encode('utf-8'), content.rstrip(), hashlib.sha256).hexdigest()
         signed_file = content + f"-- FIRMA_AUTENTICIDAD_TASKCORE:{firma}\n".encode('utf-8')
         
         resp = self.client.post('/api/mantenimiento/subir-restaurar', data={
@@ -1142,6 +1142,67 @@ class TestSistemaTaskCore(unittest.TestCase):
         self.assertEqual(data['diagnostico_insumos'], 'Insumos de prueba')
         self.assertEqual(data['diagnostico_observaciones'], 'Observaciones de prueba')
         
+        self.logout()
+
+    def test_26_backup_and_restore(self):
+        """Prueba de creación, listado, descarga y restauración de respaldos."""
+        import os
+        # 1. Login como admin
+        self.login('admin@taskcore.com', 'admin123')
+        
+        # 2. Crear respaldo
+        resp_crear = self.client.post('/api/mantenimiento/respaldar')
+        self.assertEqual(resp_crear.status_code, 200)
+        data_crear = resp_crear.get_json()
+        self.assertIn("mensaje", data_crear)
+        
+        # Obtener el nombre del archivo de la respuesta
+        filename = data_crear["mensaje"].replace("Respaldo creado exitosamente: ", "").strip()
+        
+        # 3. Listar respaldos
+        resp_listar = self.client.get('/admin/mantenimiento')
+        self.assertEqual(resp_listar.status_code, 200)
+        # La vista renderiza mantenimiento.html, por lo que buscamos que el nombre esté en la respuesta
+        self.assertIn(filename, resp_listar.get_data(as_text=True))
+        
+        # 4. Descargar respaldo con contraseña incorrecta -> 401
+        resp_desc_fail = self.client.post(
+            f'/api/mantenimiento/respaldos/{filename}/descargar',
+            json={"password": "clave_incorrecta"}
+        )
+        self.assertEqual(resp_desc_fail.status_code, 401)
+        
+        # 5. Descargar respaldo con contraseña correcta -> 200 (debe contener la firma de autenticidad)
+        resp_desc_ok = self.client.post(
+            f'/api/mantenimiento/respaldos/{filename}/descargar',
+            json={"password": "admin123"}
+        )
+        self.assertEqual(resp_desc_ok.status_code, 200)
+        sql_content = resp_desc_ok.get_data(as_text=True)
+        self.assertIn("FIRMA_AUTENTICIDAD_TASKCORE", sql_content)
+        
+        # 6. Restaurar respaldo con contraseña incorrecta -> 401
+        resp_rest_fail = self.client.post(
+            '/api/mantenimiento/restaurar',
+            json={"filename": filename, "password": "clave_incorrecta"}
+        )
+        self.assertEqual(resp_rest_fail.status_code, 401)
+        
+        # 7. Restaurar respaldo con contraseña correcta -> 200
+        resp_rest_ok = self.client.post(
+            '/api/mantenimiento/restaurar',
+            json={"filename": filename, "password": "admin123"}
+        )
+        self.assertEqual(resp_rest_ok.status_code, 200)
+        
+        # Limpiar archivo de respaldo local creado para el test
+        carpeta_respaldos = os.getenv("BACKUP_DIR")
+        if not carpeta_respaldos:
+            carpeta_respaldos = os.path.join(os.path.dirname(os.path.abspath(__file__)), "respaldos")
+        filepath = os.path.join(carpeta_respaldos, filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            
         self.logout()
 
 if __name__ == '__main__':

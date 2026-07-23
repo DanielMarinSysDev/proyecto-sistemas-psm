@@ -49,14 +49,20 @@ def vista_auditoria():
     session = Session()
     try:
         usuario_id_filter = request.args.get('usuario_id', type=int)
-        fecha_filter = request.args.get('fecha', '').strip()
+        tipo_filtro = request.args.get('tipo_filtro', 'todo').strip()
+        anio_raw = request.args.get('anio', '').strip()
+        mes_raw = request.args.get('mes', '').strip()
+        dia_raw = request.args.get('dia', '').strip()
+        inicio_raw = request.args.get('inicio', '').strip()
+        fin_raw = request.args.get('fin', '').strip()
         query_filter = request.args.get('q', '').strip()
         page = request.args.get('page', 1, type=int)
         per_page = 50
 
         from database_models import LogAuditoria, Usuario
         from sqlalchemy import and_, or_, cast, Date
-        from datetime import datetime
+        from datetime import datetime, date, timedelta
+        import calendar
         import math
 
         # Query principal uniendo logs con el modelo de Usuario
@@ -66,12 +72,57 @@ def vista_auditoria():
         if usuario_id_filter:
             filters.append(LogAuditoria.usuario_id == usuario_id_filter)
 
-        if fecha_filter:
+        # Determinar rango de fechas para auditoría
+        start_date = None
+        end_date = None
+        hoy = date.today()
+
+        if tipo_filtro == 'hoy':
+            start_date = hoy
+            end_date = hoy
+        elif tipo_filtro == 'ayer':
+            start_date = hoy - timedelta(days=1)
+            end_date = start_date
+        elif tipo_filtro == '7dias':
+            start_date = hoy - timedelta(days=6)
+            end_date = hoy
+        elif tipo_filtro == '30dias':
+            start_date = hoy - timedelta(days=29)
+            end_date = hoy
+        elif tipo_filtro == 'dia' and dia_raw:
             try:
-                f_date = datetime.strptime(fecha_filter, "%Y-%m-%d").date()
-                filters.append(cast(LogAuditoria.fecha, Date) == f_date)
+                start_date = datetime.strptime(dia_raw, "%Y-%m-%d").date()
+                end_date = start_date
             except ValueError:
                 pass
+        elif tipo_filtro == 'rango' and inicio_raw and fin_raw:
+            try:
+                start_date = datetime.strptime(inicio_raw, "%Y-%m-%d").date()
+                end_date = datetime.strptime(fin_raw, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        elif tipo_filtro == 'mes' and mes_raw:
+            try:
+                anio = int(anio_raw) if (anio_raw and anio_raw.isdigit()) else hoy.year
+                mes = int(mes_raw)
+                start_date = date(anio, mes, 1)
+                last_day = calendar.monthrange(anio, mes)[1]
+                end_date = date(anio, mes, last_day)
+            except ValueError:
+                pass
+        elif tipo_filtro == 'anio' and anio_raw:
+            try:
+                anio = int(anio_raw)
+                start_date = date(anio, 1, 1)
+                end_date = date(anio, 12, 31)
+            except ValueError:
+                pass
+
+        if start_date and end_date:
+            start_datetime = datetime.combine(start_date, datetime.min.time())
+            end_datetime = datetime.combine(end_date, datetime.max.time())
+            filters.append(LogAuditoria.fecha >= start_datetime)
+            filters.append(LogAuditoria.fecha <= end_datetime)
 
         if query_filter:
             busqueda = f"%{query_filter}%"
@@ -116,7 +167,12 @@ def vista_auditoria():
             logs=logs_data,
             usuarios=usuarios_list,
             current_usuario_id=usuario_id_filter,
-            current_fecha=fecha_filter,
+            current_tipo_filtro=tipo_filtro,
+            current_anio=anio_raw,
+            current_mes=mes_raw,
+            current_dia=dia_raw,
+            current_inicio=inicio_raw,
+            current_fin=fin_raw,
             current_query=query_filter,
             page=page,
             total_pages=total_pages,
@@ -733,7 +789,67 @@ def vista_mantenimiento():
     Renderiza la vista de mantenimiento y respaldos de base de datos.
     """
     import os
+    import requests
     from datetime import datetime
+    
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    usa_supabase = bool(supabase_url and supabase_key)
+    respaldos_info = []
+
+    # 1. Obtener de Supabase Storage si está configurado
+    if usa_supabase:
+        bucket_name = "archivos"
+        prefix = "respaldos"
+        
+        list_url = f"{supabase_url.rstrip('/')}/storage/v1/object/list/{bucket_name}"
+        headers = {
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "prefix": prefix,
+            "options": {
+                "limit": 100,
+                "offset": 0,
+                "sortBy": {
+                    "column": "name",
+                    "order": "desc"
+                }
+            }
+        }
+        try:
+            response = requests.post(list_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                objects = response.json()
+                for obj in objects:
+                    name = obj.get('name')
+                    if not name or name == '.placeholder' or not name.endswith('.sql'):
+                        continue
+                    
+                    size_bytes = obj.get('metadata', {}).get('size', 0)
+                    tamano_str = f"{size_bytes / 1024:.1f} KB"
+                    created_at_str = obj.get('created_at', '')
+                    if created_at_str:
+                        try:
+                            dt = datetime.strptime(created_at_str[:19], '%Y-%m-%dT%H:%M:%S')
+                            fecha_mod = dt.strftime('%Y-%m-%d %H:%M:%S')
+                        except Exception:
+                            fecha_mod = created_at_str
+                    else:
+                        fecha_mod = "Desconocida"
+                        
+                    respaldos_info.append({
+                        "nombre": name,
+                        "tamano": tamano_str,
+                        "fecha": fecha_mod,
+                        "origen": "supabase"
+                    })
+        except Exception as e:
+            print(f"Error al listar respaldos de Supabase: {e}")
+
+    # 2. Obtener respaldos locales
     carpeta_respaldos = os.getenv("BACKUP_DIR")
     if not carpeta_respaldos:
         ruta_raiz = os.path.dirname(os.path.abspath(__file__))
@@ -744,36 +860,61 @@ def vista_mantenimiento():
         archivos = [f for f in os.listdir(carpeta_respaldos) if f.endswith(".sql")]
         archivos.sort(key=lambda x: os.path.getmtime(os.path.join(carpeta_respaldos, x)), reverse=True)
 
-    respaldos_info = []
     for f in archivos:
         ruta_completa = os.path.join(carpeta_respaldos, f)
-        stat = os.stat(ruta_completa)
-        tamano_kb = stat.st_size / 1024
-        fecha_mod = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-        respaldos_info.append({
-            "nombre": f,
-            "tamano": f"{tamano_kb:.1f} KB",
-            "fecha": fecha_mod
-        })
+        try:
+            stat = os.stat(ruta_completa)
+            tamano_kb = stat.st_size / 1024
+            fecha_mod = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            respaldos_info.append({
+                "nombre": f,
+                "tamano": f"{tamano_kb:.1f} KB",
+                "fecha": fecha_mod,
+                "origen": "local"
+            })
+        except Exception:
+            pass
 
-    return render_template('mantenimiento.html', respaldos=respaldos_info)
+    # Ordenar todos los respaldos por fecha desc
+    respaldos_info.sort(key=lambda x: x['fecha'], reverse=True)
+
+    return render_template('mantenimiento.html', respaldos=respaldos_info, usa_supabase=usa_supabase)
 
 @dashboard_bp.route('/api/mantenimiento/respaldar', methods=['POST'])
 @login_required
 @role_required(RolEnum.ADMIN)
 def api_respaldar():
     import os
+    from io import BytesIO
+    from flask import send_file
     from respaldar_db import realizar_respaldo
     from database_models import LogAuditoria
+    
+    destino = 'local'
+    if request.is_json:
+        data = request.get_json() or {}
+        destino = data.get('destino', 'local')
+    else:
+        destino = request.args.get('destino', 'local')
+        
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    if destino == 'supabase' and not (supabase_url and supabase_key):
+        return jsonify({"error": "Supabase no está configurado."}), 400
+
     exito, msg = realizar_respaldo()
     if exito:
+        filename = os.path.basename(msg)
+        respaldo_nombre = filename
+        
+        # Registrar auditoría
         from flask import session as flask_session
         session_db = Session()
         try:
             log = LogAuditoria(
                 usuario_id=flask_session.get('usuario_id', 1),
                 accion="Respaldo Manual",
-                detalles=f"Respaldo creado: {os.path.basename(msg)}"
+                detalles=f"Respaldo creado: {filename} (Destino: {destino})"
             )
             session_db.add(log)
             session_db.commit()
@@ -781,7 +922,41 @@ def api_respaldar():
             session_db.rollback()
         finally:
             session_db.close()
-        return jsonify({"mensaje": f"Respaldo creado exitosamente: {os.path.basename(msg)}"}), 200
+            
+        if destino == 'descargar':
+            try:
+                with open(msg, "rb") as f_file:
+                    file_data = f_file.read()
+                if os.path.exists(msg):
+                    os.remove(msg)
+                return send_file(
+                    BytesIO(file_data),
+                    mimetype="application/sql",
+                    as_attachment=True,
+                    download_name=filename
+                )
+            except Exception as e:
+                if os.path.exists(msg):
+                    os.remove(msg)
+                return jsonify({"error": f"Error al enviar descarga de respaldo: {e}"}), 500
+                
+        elif destino == 'supabase':
+            try:
+                target_path = f"respaldos/{filename}"
+                with open(msg, "rb") as f_stream:
+                    upload_to_supabase_storage(f_stream, filename, target_path, "archivos", "text/plain")
+                if os.path.exists(msg):
+                    os.remove(msg)
+                return jsonify({"mensaje": f"Respaldo creado exitosamente: {filename}"}), 200
+            except Exception as upload_err:
+                # Si falla subir a Supabase, NO borrar el archivo local para no perder la información,
+                # pero retornar un código 200 informando que se guardó localmente.
+                return jsonify({
+                    "mensaje": f"Respaldo creado exitosamente: {filename} (pero falló al subir a Supabase: {upload_err})"
+                }), 200
+        else:
+            # Destino local
+            return jsonify({"mensaje": f"Respaldo creado exitosamente: {filename}"}), 200
     else:
         return jsonify({"error": f"Fallo al crear respaldo: {msg}"}), 500
 
@@ -790,9 +965,11 @@ def api_respaldar():
 @role_required(RolEnum.ADMIN)
 def api_restaurar():
     import os
+    import requests
     data = request.json or {}
     filename = data.get('filename')
     password = data.get('password')
+    origen = data.get('origen', 'local')
     if not filename:
         return jsonify({"error": "Debe especificar el nombre del archivo de respaldo"}), 400
     if not password:
@@ -811,16 +988,62 @@ def api_restaurar():
     finally:
         db_session.close()
 
-    from restaurar_db import restaurar_archivo
-    from database_models import LogAuditoria
-    exito, msg = restaurar_archivo(filename)
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    
+    temp_filepath = None
+    if origen == 'supabase' and supabase_url and supabase_key:
+        bucket_name = "archivos"
+        headers = {
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key
+        }
+        try:
+            response = requests.get(f"{supabase_url.rstrip('/')}/storage/v1/object/{bucket_name}/respaldos/{filename}", headers=headers)
+            if response.status_code == 200:
+                carpeta_respaldos = os.getenv("BACKUP_DIR")
+                if not carpeta_respaldos:
+                    ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+                    carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
+                carpeta_respaldos = os.path.abspath(carpeta_respaldos)
+                if not os.path.exists(carpeta_respaldos):
+                    os.makedirs(carpeta_respaldos)
+                    
+                temp_filepath = os.path.abspath(os.path.join(carpeta_respaldos, f"temp_restore_{filename}"))
+                with open(temp_filepath, "wb") as f_temp:
+                    f_temp.write(response.content)
+                
+                from restaurar_db import restaurar_archivo
+                exito, msg = restaurar_archivo(temp_filepath)
+                
+                if os.path.exists(temp_filepath):
+                    os.remove(temp_filepath)
+            else:
+                return jsonify({"error": f"No se pudo descargar el archivo de respaldo desde Supabase: {response.text}"}), 500
+        except Exception as e:
+            if temp_filepath and os.path.exists(temp_filepath):
+                os.remove(temp_filepath)
+            return jsonify({"error": f"Fallo al procesar restauración desde Supabase: {e}"}), 500
+    else:
+        # Origen local
+        from restaurar_db import restaurar_archivo
+        carpeta_respaldos = os.getenv("BACKUP_DIR")
+        if not carpeta_respaldos:
+            ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+            carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
+        carpeta_respaldos = os.path.abspath(carpeta_respaldos)
+        filepath = os.path.abspath(os.path.join(carpeta_respaldos, filename))
+        
+        exito, msg = restaurar_archivo(filepath)
+        
     if exito:
         session_db = Session()
         try:
+            from database_models import LogAuditoria
             log = LogAuditoria(
                 usuario_id=usuario_id,
                 accion="Restauración Manual",
-                detalles=f"Base de datos restaurada usando respaldo: {filename}"
+                detalles=f"Base de datos restaurada usando respaldo: {filename} (Origen: {origen})"
             )
             session_db.add(log)
             session_db.commit()
@@ -837,8 +1060,12 @@ def api_restaurar():
 @role_required(RolEnum.ADMIN)
 def descargar_respaldo(filename):
     import os
+    import requests
+    from io import BytesIO
+    from flask import send_file
     data = request.json or {}
     password = data.get('password')
+    origen = data.get('origen', 'local')
     if not password:
         return jsonify({"error": "Se requiere la contraseña de administrador para descargar el respaldo."}), 401
 
@@ -853,15 +1080,7 @@ def descargar_respaldo(filename):
     finally:
         db_session.close()
 
-    carpeta_respaldos = os.getenv("BACKUP_DIR")
-    if not carpeta_respaldos:
-        ruta_raiz = os.path.dirname(os.path.abspath(__file__))
-        carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
-
     filename = os.path.basename(filename)
-    filepath = os.path.join(carpeta_respaldos, filename)
-    if not os.path.exists(filepath):
-        return jsonify({"error": "El archivo de respaldo no existe."}), 404
 
     # Registrar auditoría
     db_session = Session()
@@ -870,7 +1089,7 @@ def descargar_respaldo(filename):
         log = LogAuditoria(
             usuario_id=usuario_id,
             accion="Descarga de Respaldo",
-            detalles=f"Se descargó el archivo de respaldo: {filename}"
+            detalles=f"Se descargó el archivo de respaldo: {filename} (Origen: {origen})"
         )
         db_session.add(log)
         db_session.commit()
@@ -879,8 +1098,47 @@ def descargar_respaldo(filename):
     finally:
         db_session.close()
 
-    from flask import send_from_directory
-    return send_from_directory(carpeta_respaldos, filename, as_attachment=True)
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    if origen == 'supabase' and supabase_url and supabase_key:
+        bucket_name = "archivos"
+        headers = {
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key
+        }
+        try:
+            response = requests.get(f"{supabase_url.rstrip('/')}/storage/v1/object/{bucket_name}/respaldos/{filename}", headers=headers)
+            if response.status_code == 200:
+                return send_file(
+                    BytesIO(response.content),
+                    mimetype="application/sql",
+                    as_attachment=True,
+                    download_name=filename
+                )
+            else:
+                return jsonify({"error": f"Fallo al descargar desde Supabase: {response.text}"}), response.status_code
+        except Exception as e:
+            return jsonify({"error": f"Fallo al descargar desde Supabase: {e}"}), 500
+    else:
+        carpeta_respaldos = os.getenv("BACKUP_DIR")
+        if not carpeta_respaldos:
+            ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+            carpeta_respaldos = os.path.join(ruta_raiz, "respaldos")
+        carpeta_respaldos = os.path.abspath(carpeta_respaldos)
+
+        filepath = os.path.abspath(os.path.join(carpeta_respaldos, filename))
+        if not os.path.exists(filepath):
+            return jsonify({"error": "El archivo de respaldo no existe."}), 404
+
+        with open(filepath, "rb") as f_file:
+            file_data = f_file.read()
+
+        return send_file(
+            BytesIO(file_data),
+            mimetype="application/sql",
+            as_attachment=True,
+            download_name=filename
+        )
 
 @dashboard_bp.route('/api/mantenimiento/subir-restaurar', methods=['POST'])
 @login_required

@@ -120,6 +120,7 @@ def obtener_pedidos_deudor(cliente_id):
                 "monto_total": total_num if not ocultar else None,
                 "moneda": p.moneda,
                 "tasa_bcv": p.tasa_bcv if not ocultar else None,
+                "tasa_eur_bcv": p.tasa_eur_bcv if not ocultar else None,
                 "monto_abono": p.monto_abono if not ocultar else "Oculto",
                 "monto_abono_valor": abono_num if not ocultar else None,
                 "resta_por_pagar": max(0.0, total_num - abono_num) if not ocultar else None,
@@ -287,6 +288,21 @@ def obtener_total_usd(pedido):
             except Exception:
                 tasa = 36.0
         return pedido.monto_total / tasa
+    elif pedido.moneda == 'EUR':
+        tasa_usd = pedido.tasa_bcv
+        tasa_eur = pedido.tasa_eur_bcv
+        if not tasa_usd or tasa_usd <= 0:
+            try:
+                tasa_usd = get_tasa_bcv() or 36.0
+            except Exception:
+                tasa_usd = 36.0
+        if not tasa_eur or tasa_eur <= 0:
+            try:
+                from utils_bcv import get_tasa_eur_bcv
+                tasa_eur = get_tasa_eur_bcv() or 38.0
+            except Exception:
+                tasa_eur = 38.0
+        return (pedido.monto_total * tasa_eur) / tasa_usd
     return pedido.monto_total
 
 def parsear_nombre_proyecto(nombre):
@@ -379,66 +395,112 @@ def reportes_vista():
 def api_reportes():
     session = Session()
     try:
+        tipo_filtro = request.args.get('tipo_filtro', 'mes')
         mes_raw = request.args.get('mes')
         anio_raw = request.args.get('anio')
+        dia_raw = request.args.get('dia')
+        inicio_raw = request.args.get('inicio')
+        fin_raw = request.args.get('fin')
         
+        import datetime
+        import calendar
+        from sqlalchemy import Date, cast
+
         hoy = datetime.date.today()
-        anio = int(anio_raw) if anio_raw else hoy.year
-        
-        filtrar_por_mes = True
-        if not mes_raw or mes_raw == 'todo' or mes_raw == '0' or mes_raw == '':
-            filtrar_por_mes = False
-            mes = 0
-        else:
+        start_date = None
+        end_date = None
+        start_prev = None
+        end_prev = None
+
+        anio = int(anio_raw) if (anio_raw and anio_raw.isdigit()) else hoy.year
+        mes = int(mes_raw) if (mes_raw and mes_raw.isdigit()) else hoy.month
+
+        if tipo_filtro == 'hoy':
+            start_date = hoy
+            end_date = hoy
+        elif tipo_filtro == 'ayer':
+            start_date = hoy - datetime.timedelta(days=1)
+            end_date = start_date
+        elif tipo_filtro == '7dias':
+            start_date = hoy - datetime.timedelta(days=6)
+            end_date = hoy
+        elif tipo_filtro == '30dias':
+            start_date = hoy - datetime.timedelta(days=29)
+            end_date = hoy
+        elif tipo_filtro == 'dia' and dia_raw:
             try:
-                mes = int(mes_raw)
+                start_date = datetime.datetime.strptime(dia_raw, "%Y-%m-%d").date()
+                end_date = start_date
             except ValueError:
-                filtrar_por_mes = False
-                mes = 0
-                
-        if filtrar_por_mes:
-            if mes == 1:
-                prev_mes = 12
-                prev_anio = anio - 1
-            else:
-                prev_mes = mes - 1
-                prev_anio = anio
-                
-            # Consultar Pedidos del mes
-            pedidos_mes = session.query(Pedido).filter(
-                extract('month', Pedido.fecha_creacion) == mes,
-                extract('year', Pedido.fecha_creacion) == anio
-            ).all()
-            
-            # Consultar Pedidos del mes anterior
-            pedidos_prev = session.query(Pedido).filter(
-                extract('month', Pedido.fecha_creacion) == prev_mes,
-                extract('year', Pedido.fecha_creacion) == prev_anio
-            ).all()
-            
-            # Consultar Órdenes de trabajo del mes (excluyendo borradores)
-            ordenes_mes = session.query(OrdenTrabajo).join(Cliente).filter(
-                extract('month', OrdenTrabajo.fecha_creacion) == mes,
-                extract('year', OrdenTrabajo.fecha_creacion) == anio,
-                OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
-            ).all()
+                pass
+        elif tipo_filtro == 'rango' and inicio_raw and fin_raw:
+            try:
+                start_date = datetime.datetime.strptime(inicio_raw, "%Y-%m-%d").date()
+                end_date = datetime.datetime.strptime(fin_raw, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        elif tipo_filtro == 'mes':
+            try:
+                start_date = datetime.date(anio, mes, 1)
+                last_day = calendar.monthrange(anio, mes)[1]
+                end_date = datetime.date(anio, mes, last_day)
+            except ValueError:
+                pass
+        elif tipo_filtro == 'anio':
+            try:
+                start_date = datetime.date(anio, 1, 1)
+                end_date = datetime.date(anio, 12, 31)
+            except ValueError:
+                pass
+
+        # Si no se estableció un rango válido, usar por defecto el mes actual
+        if not start_date or not end_date:
+            tipo_filtro = 'mes'
+            start_date = datetime.date(hoy.year, hoy.month, 1)
+            last_day = calendar.monthrange(hoy.year, hoy.month)[1]
+            end_date = datetime.date(hoy.year, hoy.month, last_day)
+
+        # Calcular periodo de comparación
+        if tipo_filtro == 'mes':
+            prev_mes = mes - 1 if mes > 1 else 12
+            prev_anio = anio if mes > 1 else anio - 1
+            last_day_prev = calendar.monthrange(prev_anio, prev_mes)[1]
+            start_prev = datetime.date(prev_anio, prev_mes, 1)
+            end_prev = datetime.date(prev_anio, prev_mes, last_day_prev)
+        elif tipo_filtro == 'anio':
+            start_prev = datetime.date(anio - 1, 1, 1)
+            end_prev = datetime.date(anio - 1, 12, 31)
         else:
-            # Consultar Pedidos del año completo
-            pedidos_mes = session.query(Pedido).filter(
-                extract('year', Pedido.fecha_creacion) == anio
-            ).all()
-            
-            # Consultar Pedidos del año anterior completo (para comparación YoY)
-            pedidos_prev = session.query(Pedido).filter(
-                extract('year', Pedido.fecha_creacion) == (anio - 1)
-            ).all()
-            
-            # Consultar Órdenes de trabajo del año completo (excluyendo borradores)
-            ordenes_mes = session.query(OrdenTrabajo).join(Cliente).filter(
-                extract('year', OrdenTrabajo.fecha_creacion) == anio,
-                OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
-            ).all()
+            delta = end_date - start_date
+            start_prev = start_date - datetime.timedelta(days=delta.days + 1)
+            end_prev = start_date - datetime.timedelta(days=1)
+
+        # Convertir start_date y end_date a datetime para comparación directa de datetime
+        start_datetime = datetime.datetime.combine(start_date, datetime.time.min)
+        end_datetime = datetime.datetime.combine(end_date, datetime.time.max)
         
+        start_prev_datetime = datetime.datetime.combine(start_prev, datetime.time.min)
+        end_prev_datetime = datetime.datetime.combine(end_prev, datetime.time.max)
+
+        # Consultar Pedidos en el rango actual
+        pedidos_mes = session.query(Pedido).filter(
+            Pedido.fecha_creacion >= start_datetime,
+            Pedido.fecha_creacion <= end_datetime
+        ).all()
+
+        # Consultar Pedidos en el rango previo
+        pedidos_prev = session.query(Pedido).filter(
+            Pedido.fecha_creacion >= start_prev_datetime,
+            Pedido.fecha_creacion <= end_prev_datetime
+        ).all()
+
+        # Consultar Órdenes de trabajo en el rango actual (excluyendo borradores)
+        ordenes_mes = session.query(OrdenTrabajo).join(Cliente).filter(
+            OrdenTrabajo.fecha_creacion >= start_datetime,
+            OrdenTrabajo.fecha_creacion <= end_datetime,
+            OrdenTrabajo.estado != EstadoOrdenEnum.BORRADOR
+        ).all()
+
         # Filtrar pedidos para excluir los que solo tienen artículos en revisión o borrador
         pedidos_mes = [p for p in pedidos_mes if any(o.estado not in [EstadoOrdenEnum.BORRADOR, EstadoOrdenEnum.EN_REVISION] for o in p.articulos)]
         pedidos_prev = [p for p in pedidos_prev if any(o.estado not in [EstadoOrdenEnum.BORRADOR, EstadoOrdenEnum.EN_REVISION] for o in p.articulos)]
@@ -547,6 +609,10 @@ def api_reportes():
                 if p.moneda == 'Bs':
                     tasa = p.tasa_bcv or 36.0
                     abono_usd = abono_val / tasa if tasa > 0 else 0.0
+                elif p.moneda == 'EUR':
+                    tasa_usd = p.tasa_bcv or 36.0
+                    tasa_eur = p.tasa_eur_bcv or 38.0
+                    abono_usd = (abono_val * tasa_eur) / tasa_usd if tasa_usd > 0 else 0.0
                 else:
                     abono_usd = abono_val
                 
@@ -571,10 +637,11 @@ def api_reportes():
             "Pago Móvil / Transferencia",
             "Zelle",
             "Efectivo Bs",
+            "Efectivo €",
             "Saldo a favor",
             "Otro"
         ]
-        desglose_pagos = {met: {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0} for met in metodos_estandar}
+        desglose_pagos = {met: {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0, "original_eur": 0.0} for met in metodos_estandar}
         
         def normalizar_metodo(metodo_raw):
             if not metodo_raw:
@@ -582,6 +649,8 @@ def api_reportes():
             met = str(metodo_raw).strip().lower()
             if "pago" in met or "movil" in met or "móvil" in met or "transf" in met or "transferencia" in met:
                 return "Pago Móvil / Transferencia"
+            if "efectivo" in met and ("€" in met or "eur" in met or "euro" in met):
+                return "Efectivo €"
             if "efectivo" in met and ("$" in met or "usd" in met or "dolar" in met or "dólar" in met):
                 return "Efectivo $"
             if "efectivo" in met and ("bs" in met or "ves" in met or "boliv" in met):
@@ -615,7 +684,7 @@ def api_reportes():
                         
                     metodo = normalizar_metodo(metodo_raw)
                     if metodo not in desglose_pagos:
-                        desglose_pagos[metodo] = {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0}
+                        desglose_pagos[metodo] = {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0, "original_eur": 0.0}
                         
                     tasa = p.tasa_bcv
                     if not tasa or tasa <= 0:
@@ -623,33 +692,46 @@ def api_reportes():
                         
                     es_metodo_bs = metodo in ["Pago Móvil / Transferencia", "Efectivo Bs"]
                     es_metodo_usd = metodo in ["Zelle", "Efectivo $"]
+                    es_metodo_eur = metodo in ["Efectivo €"]
                     
                     if p.moneda == 'Bs':
                         monto_bs = monto_original
                         monto_usd = monto_bs / tasa if tasa > 0 else 0.0
+                        monto_eur = monto_bs / (p.tasa_eur_bcv or 38.0) if (p.tasa_eur_bcv or 38.0) > 0 else 0.0
+                    elif p.moneda == 'EUR':
+                        tasa_eur = p.tasa_eur_bcv or 38.0
+                        monto_bs = monto_original * tasa_eur
+                        monto_usd = monto_bs / tasa if tasa > 0 else 0.0
+                        monto_eur = monto_original
                     else:
                         monto_usd = monto_original
                         monto_bs = monto_usd * tasa
+                        monto_eur = monto_bs / (p.tasa_eur_bcv or 38.0) if (p.tasa_eur_bcv or 38.0) > 0 else 0.0
                         
                     desglose_pagos[metodo]["usd_eq"] += monto_usd
                     if es_metodo_bs:
                         desglose_pagos[metodo]["original_bs"] += monto_bs
                     elif es_metodo_usd:
                         desglose_pagos[metodo]["original_usd"] += monto_usd
+                    elif es_metodo_eur:
+                        desglose_pagos[metodo]["original_eur"] += monto_eur
                     else:
                         if p.moneda == 'Bs':
                             desglose_pagos[metodo]["original_bs"] += monto_bs
+                        elif p.moneda == 'EUR':
+                            desglose_pagos[metodo]["original_eur"] += monto_eur
                         else:
                             desglose_pagos[metodo]["original_usd"] += monto_usd
 
         desglose_list = []
         for met in metodos_estandar:
-            val = desglose_pagos.get(met, {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0})
+            val = desglose_pagos.get(met, {"usd_eq": 0.0, "original_usd": 0.0, "original_bs": 0.0, "original_eur": 0.0})
             desglose_list.append({
                 "metodo": met,
                 "usd_eq": round(val["usd_eq"], 2),
                 "original_usd": round(val["original_usd"], 2),
-                "original_bs": round(val["original_bs"], 2)
+                "original_bs": round(val["original_bs"], 2),
+                "original_eur": round(val.get("original_eur", 0.0), 2)
             })
         
         for met, val in desglose_pagos.items():
@@ -658,7 +740,8 @@ def api_reportes():
                     "metodo": met,
                     "usd_eq": round(val["usd_eq"], 2),
                     "original_usd": round(val["original_usd"], 2),
-                    "original_bs": round(val["original_bs"], 2)
+                    "original_bs": round(val["original_bs"], 2),
+                    "original_eur": round(val.get("original_eur", 0.0), 2)
                 })
 
         crecimiento = 0.0
@@ -754,6 +837,7 @@ def get_orden_detalle(orden_id):
                 "monto_total": p.monto_total or 0.0,
                 "moneda": p.moneda,
                 "tasa_bcv": p.tasa_bcv,
+                "tasa_eur_bcv": p.tasa_eur_bcv,
                 "estado_pago": p.estado_pago,
                 "metodo_pago": p.metodo_pago or "No especificado",
                 "monto_abono": p.monto_abono or "Ninguno"

@@ -159,36 +159,78 @@
     </div>
 
     <!-- Encabezado con selector de fecha -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-slate-700/50 pb-5 no-print">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 border-b border-slate-700/50 pb-5 no-print">
         <div>
             <h1 class="text-3xl font-bold text-slate-100 flex items-center">
                 <svg class="w-8 h-8 mr-3 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                 Historial y Métricas de Rendimiento
             </h1>
-            <p class="mt-2 text-sm text-slate-400">Seguimiento mensual de soporte técnico, facturación y repuestos.</p>
+            <p class="mt-2 text-sm text-slate-400">Seguimiento flexible de soporte técnico, facturación y repuestos.</p>
         </div>
         
-        <!-- Filtros de fecha y Botón de Imprimir -->
-        <div class="flex items-center gap-2">
-            <div class="flex items-center space-x-2 bg-slate-900/60 p-2 border border-slate-800 rounded-lg">
-                <select x-model="filtroMes" @change="cargarReportes()" class="bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 font-sans">
+        <button @click="triggerPrint()" class="inline-flex items-center justify-center px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 text-sm font-semibold rounded-lg transition-all active:scale-95 border border-slate-700 shadow-md">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Imprimir PDF
+        </button>
+    </div>
+
+    <!-- Barra de Filtros Avanzada -->
+    <div class="glass border border-slate-800 rounded-xl p-5 mb-8 no-print">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <!-- Selector de Periodo -->
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Periodo / Rango</label>
+                <select x-model="tipoFiltro" @change="cargarReportes()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+                    <option value="todo">Todo el tiempo</option>
+                    <option value="hoy">Hoy</option>
+                    <option value="ayer">Ayer</option>
+                    <option value="7dias">Últimos 7 días</option>
+                    <option value="30dias">Últimos 30 días</option>
+                    <option value="dia">Día específico</option>
+                    <option value="rango">Rango de fechas</option>
+                    <option value="mes">Mes específico</option>
+                    <option value="anio">Año específico</option>
+                </select>
+            </div>
+
+            <!-- Inputs Dinámicos -->
+            <!-- Día Específico -->
+            <div class="space-y-1 md:col-span-2" x-show="tipoFiltro === 'dia'">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Seleccionar Día</label>
+                <input type="date" x-model="filtroDia" @change="if(filtroDia) cargarReportes()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+            </div>
+
+            <!-- Rango de Fechas -->
+            <div class="space-y-1 md:col-span-2" x-show="tipoFiltro === 'rango'">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Entre Fechas</label>
+                <div class="flex items-center gap-2">
+                    <input type="date" x-model="filtroInicio" @change="if(filtroInicio && filtroFin) cargarReportes()" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+                    <span class="text-slate-500 text-xs font-bold">y</span>
+                    <input type="date" x-model="filtroFin" @change="if(filtroInicio && filtroFin) cargarReportes()" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
+                </div>
+            </div>
+
+            <!-- Mes Específico -->
+            <div class="space-y-1" x-show="tipoFiltro === 'mes'">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Seleccionar Mes</label>
+                <select x-model="filtroMes" @change="cargarReportes()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
                     <template x-for="mes in mesesDisponibles" :key="mes.valor">
                         <option :value="mes.valor" x-text="mes.etiqueta" :selected="mes.valor === filtroMes"></option>
                     </template>
                 </select>
-                <select x-model="filtroAnio" @change="actualizarOpcionesFecha(); cargarReportes()" class="bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-blue-500 font-sans">
+            </div>
+
+            <!-- Año (para Mes o Año) -->
+            <div class="space-y-1" x-show="tipoFiltro === 'mes' || tipoFiltro === 'anio'">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Seleccionar Año</label>
+                <select x-model="filtroAnio" @change="actualizarOpcionesFecha(); cargarReportes()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans">
                     <template x-for="anio in aniosDisponibles" :key="anio.valor">
                         <option :value="anio.valor" x-text="anio.etiqueta" :selected="anio.valor === filtroAnio"></option>
                     </template>
                 </select>
             </div>
-            
-            <button @click="triggerPrint()" class="inline-flex items-center justify-center px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 text-sm font-semibold rounded-lg transition-all active:scale-95 border border-slate-700">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                </svg>
-                Imprimir PDF
-            </button>
         </div>
     </div>
 
@@ -679,11 +721,15 @@
                             <div class="p-4 bg-slate-900/30 border border-slate-850 rounded-xl space-y-3 text-sm">
                                 <div class="flex justify-between">
                                     <span class="text-slate-400">Total Pedido:</span>
-                                    <span class="font-bold text-white font-mono" x-text="'$ ' + (detalleOrden?.pedido?.monto_total || 0).toFixed(2)"></span>
+                                    <span class="font-bold text-white font-mono" x-text="(detalleOrden?.pedido?.moneda === 'USD' ? '$ ' : (detalleOrden?.pedido?.moneda === 'EUR' ? '€ ' : 'Bs. ')) + (detalleOrden?.pedido?.monto_total || 0).toFixed(2)"></span>
                                 </div>
                                 <div class="flex justify-between" x-show="detalleOrden?.pedido?.moneda === 'Bs'">
-                                    <span class="text-slate-400">Tasa de Conversión (BCV):</span>
+                                    <span class="text-slate-400">Tasa de Conversión (BCV USD):</span>
                                     <span class="font-mono text-slate-300" x-text="detalleOrden?.pedido?.tasa_bcv ? ('Bs. ' + detalleOrden.pedido.tasa_bcv.toFixed(2)) : 'N/A'"></span>
+                                </div>
+                                <div class="flex justify-between" x-show="detalleOrden?.pedido?.moneda === 'EUR'">
+                                    <span class="text-slate-400">Tasa de Conversión (BCV EUR):</span>
+                                    <span class="font-mono text-slate-300" x-text="detalleOrden?.pedido?.tasa_eur_bcv ? ('Bs. ' + detalleOrden.pedido.tasa_eur_bcv.toFixed(2)) : 'N/A'"></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-400">Estado de Cobro:</span>
@@ -765,8 +811,12 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('reportesModule', () => ({
+            tipoFiltro: 'mes',
             filtroMes: '',
             filtroAnio: '',
+            filtroDia: '',
+            filtroInicio: '',
+            filtroFin: '',
             loading: false,
             modalDetalleAbierto: false,
             detalleOrden: null,
@@ -794,10 +844,19 @@
                 const anioActual = hoy.getFullYear();
                 const mesActual = hoy.getMonth() + 1;
                 
+                const yyyy = hoy.getFullYear();
+                const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+                const dd = String(hoy.getDate()).padStart(2, '0');
+                this.filtroDia = `${yyyy}-${mm}-${dd}`;
+                this.filtroInicio = `${yyyy}-${mm}-01`;
+                this.filtroFin = `${yyyy}-${mm}-${dd}`;
+                
                 const urlParams = new URLSearchParams(window.location.search);
                 const mesParam = urlParams.get('mes');
                 const anioParam = urlParams.get('anio');
+                const tipoParam = urlParams.get('tipo_filtro');
                 
+                this.tipoFiltro = tipoParam || 'mes';
                 this.filtroMes = mesParam || String(mesActual);
                 this.filtroAnio = anioParam || String(anioActual);
                 
@@ -865,7 +924,17 @@
             async cargarReportes() {
                 this.loading = true;
                 try {
-                    const res = await fetch(`/api/finanzas/reportes?mes=${this.filtroMes}&anio=${this.filtroAnio}`);
+                    let url = `/api/finanzas/reportes?tipo_filtro=${this.tipoFiltro}`;
+                    if (this.tipoFiltro === 'mes') {
+                        url += `&mes=${this.filtroMes}&anio=${this.filtroAnio}`;
+                    } else if (this.tipoFiltro === 'anio') {
+                        url += `&anio=${this.filtroAnio}`;
+                    } else if (this.tipoFiltro === 'dia') {
+                        url += `&dia=${this.filtroDia}`;
+                    } else if (this.tipoFiltro === 'rango') {
+                        url += `&inicio=${this.filtroInicio}&fin=${this.filtroFin}`;
+                    }
+                    const res = await fetch(url);
                     if (res.ok) {
                         this.datos = await res.json();
                     } else {
@@ -904,9 +973,27 @@
                 }
                 const periodSpan = document.getElementById('print-period-span');
                 if (periodSpan) {
-                    const mesObj = this.mesesDisponibles.find(m => m.valor === this.filtroMes);
-                    const mesLabel = mesObj ? mesObj.etiqueta : "Todo el año";
-                    periodSpan.textContent = `${mesLabel} ${this.filtroAnio}`;
+                    let label = "Todo";
+                    if (this.tipoFiltro === 'mes') {
+                        const mesObj = this.mesesDisponibles.find(m => m.valor === this.filtroMes);
+                        const mesLabel = mesObj ? mesObj.etiqueta : "Todo el año";
+                        label = `${mesLabel} ${this.filtroAnio}`;
+                    } else if (this.tipoFiltro === 'anio') {
+                        label = `Año ${this.filtroAnio}`;
+                    } else if (this.tipoFiltro === 'dia') {
+                        label = `Día ${this.filtroDia}`;
+                    } else if (this.tipoFiltro === 'rango') {
+                        label = `Rango ${this.filtroInicio} al ${this.filtroFin}`;
+                    } else if (this.tipoFiltro === 'hoy') {
+                        label = "Hoy";
+                    } else if (this.tipoFiltro === 'ayer') {
+                        label = "Ayer";
+                    } else if (this.tipoFiltro === '7dias') {
+                        label = "Últimos 7 días";
+                    } else if (this.tipoFiltro === '30dias') {
+                        label = "Últimos 30 días";
+                    }
+                    periodSpan.textContent = label;
                 }
                 setTimeout(() => {
                     window.print();

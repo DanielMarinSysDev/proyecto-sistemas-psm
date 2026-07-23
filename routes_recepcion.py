@@ -76,7 +76,19 @@ def crear_orden_trabajo():
         monto_abono = data.get('monto_abono', '')
         metodo_pago = data.get('metodo_pago', '')
         moneda = data.get('moneda', 'USD')
+        if moneda == 'VES':
+            moneda = 'Bs'
         tasa_bcv = data.get('tasa_bcv', None)
+        tasa_eur_bcv = data.get('tasa_eur_bcv', None)
+        if tasa_bcv is not None:
+            tasa_bcv = float(tasa_bcv)
+        else:
+            tasa_bcv = utils_bcv.get_tasa_bcv()
+            
+        if tasa_eur_bcv is not None:
+            tasa_eur_bcv = float(tasa_eur_bcv)
+        else:
+            tasa_eur_bcv = utils_bcv.get_tasa_eur_bcv()
 
         # Calcular el valor numérico del abono ingresado manualmente
         abono_valor = 0.0
@@ -134,6 +146,7 @@ def crear_orden_trabajo():
             monto_total=monto_total,
             moneda=moneda,
             tasa_bcv=tasa_bcv,
+            tasa_eur_bcv=tasa_eur_bcv,
             ocultar_precio_ventas=ocultar_precio_ventas
         )
         session.add(nuevo_pedido)
@@ -556,8 +569,12 @@ def siguiente_referencia():
 def get_bcv_rate():
     """Retorna la tasa del BCV actual (en caché por 12 horas) redondeda a 2 decimales"""
     tasa = utils_bcv.get_tasa_bcv()
+    tasa_eur = utils_bcv.get_tasa_eur_bcv()
     if tasa:
-        return jsonify({"tasa": round(tasa, 2)}), 200
+        return jsonify({
+            "tasa": round(tasa, 2),
+            "tasa_eur": round(tasa_eur, 2) if tasa_eur else None
+        }), 200
     else:
         return jsonify({"error": "No se pudo obtener la tasa del BCV"}), 500
 
@@ -797,7 +814,18 @@ def confirmar_borrador(orden_id):
         metodo_pago = data.get('metodo_pago', '')
         monto_total = float(data.get('monto_total', pedido.monto_total))
         moneda = data.get('moneda', 'USD')
+        if moneda == 'VES':
+            moneda = 'Bs'
         tasa_bcv = float(data.get('tasa_bcv', 0.0))
+        tasa_eur_bcv = data.get('tasa_eur_bcv')
+        if tasa_eur_bcv is not None:
+            tasa_eur_bcv = float(tasa_eur_bcv)
+        else:
+            tasa_eur_bcv = data.get('tasa_eur')
+            if tasa_eur_bcv is not None:
+                tasa_eur_bcv = float(tasa_eur_bcv)
+            else:
+                tasa_eur_bcv = utils_bcv.get_tasa_eur_bcv() or 0.0
         disenador_id = data.get('disenador_id')
         
         # Validar motivo sin costo si total es 0
@@ -864,6 +892,7 @@ def confirmar_borrador(orden_id):
         pedido.monto_total = monto_total
         pedido.moneda = moneda
         pedido.tasa_bcv = tasa_bcv
+        pedido.tasa_eur_bcv = tasa_eur_bcv
         ocultar_precio_val = data.get('ocultar_precio_ventas', False)
         if flask_session.get('usuario_rol') not in [RolEnum.ADMIN.value, RolEnum.GERENCIA.value]:
             ocultar_precio_val = False
@@ -1091,6 +1120,7 @@ def repetir_articulo_orden(articulo_id):
             monto_total=pedido_original.monto_total if pedido_original else 0.0,
             moneda=pedido_original.moneda if pedido_original else "USD",
             tasa_bcv=pedido_original.tasa_bcv if pedido_original else None,
+            tasa_eur_bcv=pedido_original.tasa_eur_bcv if pedido_original else None,
             ocultar_precio_ventas=pedido_original.ocultar_precio_ventas if pedido_original else False
         )
         session.add(nuevo_pedido)
